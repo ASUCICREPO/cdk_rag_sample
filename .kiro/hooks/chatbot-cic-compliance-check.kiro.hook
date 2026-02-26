@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "CIC Compliance Check",
+  "description": "Scans the backend and frontend against CIC standards. References steering files for requirements — no inline checklists.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Perform a CIC compliance check on this project. Scan all files under backend/lib, backend/lambda, and frontend/app.\n\nFor each area below, load the referenced steering file to get the requirements, then evaluate the code against them. Report PASS, FAIL, or WARNING per item.\n\n## 1. Backend Infrastructure (CDK Stack)\nLoad and check against: #backend-standards.md\nFocus on: Lambda definitions, DynamoDB config, S3 config, Amplify setup, API Gateway, CfnOutputs, context variable validation.\n\n## 2. IAM & Secrets\nLoad and check against: #security-iam-secrets.md\nNote: cdk-nag (AwsSolutionsChecks) is already integrated in backend/lib/backend-stack.ts and runs on every cdk synth — flag any suppressions that lack an ADR-format reason.\n\n## 3. Data & Encryption\nLoad and check against: #security-data-encryption.md\nFocus on: S3 encryption, enforceSSL, DynamoDB encryption, data classification.\n\n## 4. Code & Dependencies\nLoad and check against: #security-code-dependencies.md\nFocus on: pinned dependencies, no hardcoded secrets, safe temp file usage, AI/GenAI input/output handling.\n\n## 5. Operations & Resilience\nLoad and check against: #security-operations.md\nFocus on: error handling, structured logging, no PII in logs, retry patterns.\n\n## 6. Compliance & Documentation\nLoad and check against: #security-compliance.md\nFocus on: SECURITY.md present, threat model, license headers, resource tagging.\n\nAfter the scan output:\n1. A summary table with PASS/FAIL/WARNING per item\n2. A prioritized fix list (CRITICAL → HIGH → MEDIUM → LOW)\n3. Specific code or CDK snippets to fix each FAIL"
+  },
+  "workspaceFolderName": "Repository-Template",
+  "shortName": "chatbot-cic-compliance-check"
+}
