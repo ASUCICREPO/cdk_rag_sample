@@ -157,6 +157,10 @@ new cdk.CfnOutput(this, "ApiUrl", { value: api.url, description: "API Gateway UR
 
 Use CDK grant methods first (`table.grantReadWriteData(fn)`, `bucket.grantRead(fn)`); for Bedrock models use explicit policy statements with specific model ARNs (never wildcard); least privilege always.
 
+## RAG Chatbots with S3 Vectors
+
+For projects that use Bedrock Knowledge Base + S3 Vectors for RAG, follow the patterns in #[[file:.kiro/steering/backend/s3-vectors-rag-chatbot.md]]. Covers S3 Vectors bucket/index setup (TypeScript + Python CDK), Bedrock KB wiring, Lambda retrieval, ingestion patterns, and cdk-nag suppressions.
+
 ## Security Scanning with cdk-nag
 
 cdk-nag is integrated directly in `backend/lib/backend-stack.ts` via `Aspects.of(this).add(new AwsSolutionsChecks({ verbose: true }))`. It runs automatically on every `cdk synth` and `cdk deploy` — no extra setup needed.
