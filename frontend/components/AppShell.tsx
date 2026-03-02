@@ -9,7 +9,6 @@ import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import ChatInterface from '@/components/ChatInterface';
 import LanguageSelector from '@/components/LanguageSelector';
-import RoleSelector from '@/components/RoleSelector';
 import LeadCaptureForm from '@/components/LeadCaptureForm';
 
 type UserRole = 'instructor' | 'internal_staff' | 'learner';
@@ -177,7 +176,37 @@ export default function AppShell() {
         <h1 className="mb-6 text-2xl font-semibold text-gray-800">
           Learning Navigator
         </h1>
-        <Authenticator>
+        <Authenticator
+          signUpAttributes={['email']}
+          formFields={{
+            signUp: {
+              email: {
+                order: 1,
+                label: 'Email',
+                placeholder: 'Enter your email',
+                isRequired: true,
+              },
+              password: {
+                order: 2,
+                label: 'Password',
+                placeholder: 'Enter your password',
+                isRequired: true,
+              },
+              confirm_password: {
+                order: 3,
+                label: 'Confirm Password',
+                placeholder: 'Confirm your password',
+                isRequired: true,
+              },
+              'custom:role': {
+                order: 4,
+                label: 'Role',
+                placeholder: 'Enter: learner, instructor, or internal_staff',
+                isRequired: true,
+              },
+            },
+          }}
+        >
           {({ user }) => {
             // Once Authenticator reports a user, refresh our auth state
             if (user) {
