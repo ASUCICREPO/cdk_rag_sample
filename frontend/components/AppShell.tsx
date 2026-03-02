@@ -53,7 +53,12 @@ export default function AppShell() {
       await getCurrentUser();
       const session = await fetchAuthSession();
       const idToken = session.tokens?.idToken;
-      const accessToken = session.tokens?.accessToken?.toString() ?? '';
+      // ADR: Pass ID token (not access token) for all authenticated requests
+      // Rationale: ID token carries custom:role claim needed for role-based personalization.
+      //   API Gateway Cognito authorizer also validates ID tokens by default.
+      //   Access token lacks custom claims, causing role extraction to default to 'learner'.
+      // Alternative: Access token (rejected - missing custom:role, causes authorizer CORS errors)
+      const idTokenStr = idToken?.toString() ?? '';
       const role =
         (idToken?.payload?.['custom:role'] as UserRole) || 'learner';
       const displayName =
@@ -67,7 +72,7 @@ export default function AppShell() {
         isTokenExpired: false,
         username: displayName,
         userRole: role,
-        token: accessToken,
+        token: idTokenStr,
       });
     } catch {
       // If we were previously authenticated, treat as token expiry

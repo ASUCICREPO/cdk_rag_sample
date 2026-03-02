@@ -51,7 +51,13 @@ export default function AdminDashboardPage() {
       await getCurrentUser();
       const session = await fetchAuthSession();
       const idToken = session.tokens?.idToken;
-      const accessToken = session.tokens?.accessToken?.toString() ?? '';
+      // ADR: Pass ID token (not access token) to API Gateway
+      // Rationale: API Gateway Cognito authorizer validates ID tokens by default.
+      //   Sending the access token causes a 401 rejection before reaching Lambda,
+      //   and the authorizer's error response lacks CORS headers, surfacing as CORS errors.
+      // Alternative: Switch authorizer to access token validation (rejected - ID token
+      //   carries custom:role claim needed for role-based access control)
+      const idTokenStr = idToken?.toString() ?? '';
       const role = (idToken?.payload?.['custom:role'] as string) ?? '';
       const displayName =
         (idToken?.payload?.['preferred_username'] as string) ??
@@ -63,7 +69,7 @@ export default function AdminDashboardPage() {
         isLoading: false,
         username: displayName,
         role,
-        token: accessToken,
+        token: idTokenStr,
       });
     } catch {
       setAuthState({
