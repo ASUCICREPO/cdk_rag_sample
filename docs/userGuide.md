@@ -1,28 +1,28 @@
 # User Guide
 
-This guide provides step-by-step instructions for using [INSERT_PROJECT_NAME].
+This guide provides instructions for using the Learning Navigator chatbot.
 
 ---
 
 ## Prerequisites
 
-**Please ensure the application is deployed before proceeding.** 
-
-See the [Deployment Guide](./deploymentGuide.md) for deployment instructions.
+The application must be deployed before use. See the [Deployment Guide](./deploymentGuide.md) for instructions.
 
 ---
 
 ## Introduction
 
-[INSERT_APPLICATION_INTRODUCTION - Explain what the application does and its main functionality]
-
-[INSERT_PROJECT_NAME] is designed to [INSERT_PRIMARY_PURPOSE]. Users can [INSERT_KEY_CAPABILITIES].
+Learning Navigator is an AI-powered chatbot assistant for the National Council for Mental Wellbeing's Mental Health First Aid (MHFA) program. It provides real-time guidance, answers FAQs, and helps navigate training resources using official MHFA documentation.
 
 ### Key Features
-- [INSERT_FEATURE_1]
-- [INSERT_FEATURE_2]
-- [INSERT_FEATURE_3]
-- [INSERT_FEATURE_4]
+
+- AI-powered chat with real-time streaming responses
+- Answers grounded in official MHFA documentation with source citations
+- Role-based personalization (Instructor, Internal Staff, Learner)
+- English and Spanish language support
+- Escalation to human support when needed
+- Lead capture for prospective users
+- Admin dashboard with analytics and conversation oversight
 
 ---
 
@@ -30,132 +30,142 @@ See the [Deployment Guide](./deploymentGuide.md) for deployment instructions.
 
 ### Step 1: Access the Application
 
-Navigate to the application URL: `[INSERT_APPLICATION_URL]`
+Navigate to the application URL provided after deployment (e.g., `https://main.<app-id>.amplifyapp.com`).
 
-![Step 1 - Application Landing Page](./media/step-1-landing-page.png)
+You will see the sign-in page powered by Amazon Cognito. Enter your email and password to authenticate.
 
-> **[PLACEHOLDER]** Please provide a screenshot of the application landing page and save as `docs/media/step-1-landing-page.png`
+- First-time users will be prompted to change their temporary password.
+- Your account has a role assigned (`instructor`, `internal_staff`, or `learner`) that personalizes your experience.
 
-- [INSERT_DESCRIPTION_OF_LANDING_PAGE]
+### Step 2: Chat with the Navigator
 
----
+After signing in, you'll see the chat interface with a welcome message and suggested prompts tailored to your role:
 
-### Step 2: [INSERT_STEP_2_NAME]
+- **Instructors** see prompts about course management, invoicing, and the Instructor Policy Handbook
+- **Internal Staff** see prompts about analytics, operational guidelines, and admin guidance
+- **Learners** see prompts about MHFA training, certification, and resources
 
-[INSERT_STEP_2_INSTRUCTIONS]
+Click a suggested prompt or type your own question in the input bar. Press Enter or click the send button to submit.
 
-![Step 2 - [INSERT_STEP_NAME]](./media/step-2-action.png)
+### Step 3: View Streaming Responses
 
-> **[PLACEHOLDER]** Please provide a screenshot showing [INSERT_WHAT_TO_CAPTURE] and save as `docs/media/step-2-action.png`
+Responses stream in real time — you'll see text appearing incrementally as the AI generates its answer. Responses are formatted with markdown (headings, bullet points, bold text) for readability.
 
-- [INSERT_DESCRIPTION_OF_WHAT_USER_SEES]
-- [INSERT_ANY_IMPORTANT_NOTES]
+### Step 4: Review Citations
 
----
+When the AI uses information from official MHFA documentation, source citations appear below the response as clickable cards. Each card shows the document name and links to the source PDF.
 
-### Step 3: [INSERT_STEP_3_NAME]
+### Step 5: Rate Responses
 
-[INSERT_STEP_3_INSTRUCTIONS]
-
-![Step 3 - [INSERT_STEP_NAME]](./media/step-3-action.png)
-
-> **[PLACEHOLDER]** Please provide a screenshot showing [INSERT_WHAT_TO_CAPTURE] and save as `docs/media/step-3-action.png`
-
-- [INSERT_DESCRIPTION_OF_WHAT_USER_SEES]
+Each assistant response has thumbs up and thumbs down buttons. Click one to rate the response as helpful or unhelpful. This feedback helps improve the system.
 
 ---
 
-### Step 4: [INSERT_STEP_4_NAME]
+## Switching Languages
 
-[INSERT_STEP_4_INSTRUCTIONS]
+Use the language dropdown in the top-right header to switch between English and Español. The chatbot will respond in your selected language for all subsequent messages. Your conversation history is preserved when switching languages.
 
-![Step 4 - [INSERT_STEP_NAME]](./media/step-4-action.png)
-
-> **[PLACEHOLDER]** Please provide a screenshot showing [INSERT_WHAT_TO_CAPTURE] and save as `docs/media/step-4-action.png`
-
-- [INSERT_DESCRIPTION_OF_WHAT_USER_SEES]
+The application also auto-detects your browser language on first load.
 
 ---
 
-### Step 5: [INSERT_STEP_5_NAME - e.g., "View Results"]
+## Escalating to Human Support
 
-[INSERT_STEP_5_INSTRUCTIONS]
+If the chatbot cannot resolve your issue, you can request human support:
 
-![Step 5 - [INSERT_STEP_NAME]](./media/step-5-result.png)
+1. Click the escalation option in the chat interface
+2. Enter your contact email address
+3. Confirm the escalation request
+4. You'll see a confirmation message that a support team member will follow up
 
-> **[PLACEHOLDER]** Please provide a screenshot showing the final result/output and save as `docs/media/step-5-result.png`
-
-- [INSERT_DESCRIPTION_OF_FINAL_OUTPUT]
-
----
-
-## Common Use Cases
-
-### Use Case 1: [INSERT_USE_CASE_NAME]
-
-[INSERT_USE_CASE_DESCRIPTION]
-
-**Steps:**
-1. [INSERT_STEP]
-2. [INSERT_STEP]
-3. [INSERT_STEP]
-
-![Use Case 1 Example](./media/use-case-1.png)
-
-> **[PLACEHOLDER]** Please provide a screenshot demonstrating this use case
+The escalation includes your conversation summary and contact information for context.
 
 ---
 
-### Use Case 2: [INSERT_USE_CASE_NAME]
+## Lead Capture (Unauthenticated Users)
 
-[INSERT_USE_CASE_DESCRIPTION]
+If you're not yet a member, you can submit your contact information via the "Not a member? Get in touch" link on the sign-in page:
 
-**Steps:**
-1. [INSERT_STEP]
-2. [INSERT_STEP]
-3. [INSERT_STEP]
+1. Click the link to open the lead capture form
+2. Enter your name, email, and area of interest
+3. Submit the form
+4. You can dismiss the form at any time without restriction
 
-![Use Case 2 Example](./media/use-case-2.png)
+---
 
-> **[PLACEHOLDER]** Please provide a screenshot demonstrating this use case
+## Admin Dashboard
+
+The admin dashboard is available to users with the `internal_staff` role at the `/admin` URL.
+
+### Conversations Tab
+
+- View all conversation sessions with timestamps, user roles, and languages
+- Filter by date range, user role, language, and sentiment score
+- Expand any session to view the full message history
+
+### Analytics Tab
+
+- View usage metrics: total conversations, active sessions, average session duration
+- Select time periods: 7 days, 30 days, or 90 days
+- View sentiment trend charts showing average sentiment over time
+
+### Escalations Tab
+
+- View pending escalation requests with session details and contact info
+- Filter by status (pending or resolved)
+- Mark escalations as resolved after follow-up
+
+### Feedback Tab
+
+- View feedback aggregation: positive/negative counts and ratio
+- Select time periods: 7 days, 30 days, or 90 days
+- View daily trend charts showing feedback patterns over time
 
 ---
 
 ## Tips and Best Practices
 
-- **Tip 1**: [INSERT_TIP]
-- **Tip 2**: [INSERT_TIP]
-- **Tip 3**: [INSERT_TIP]
-- **Tip 4**: [INSERT_TIP]
+- Be specific in your questions for more accurate, relevant answers
+- Use the suggested prompts as starting points for common topics
+- Check the source citations to verify information against official documents
+- Switch to Spanish if you prefer responses in Español
+- Rate responses to help improve the system over time
+- If the chatbot can't help, use the escalation feature to connect with human support
 
 ---
 
-## Frequently Asked Questions (FAQ)
+## FAQ
 
-### Q: [INSERT_QUESTION_1]
-**A:** [INSERT_ANSWER_1]
+### Q: What documents does the chatbot use to answer questions?
+**A:** The chatbot is grounded in official MHFA documentation including the Instructor Policy Handbook, MHFA Connect User Guides, and National Council Brand Guidelines.
 
-### Q: [INSERT_QUESTION_2]
-**A:** [INSERT_ANSWER_2]
+### Q: Can I use the chatbot without signing in?
+**A:** Authentication is required for the chat interface. Unauthenticated users can submit their contact information via the lead capture form.
 
-### Q: [INSERT_QUESTION_3]
-**A:** [INSERT_ANSWER_3]
+### Q: How do I change my role?
+**A:** Roles are assigned by administrators in the Cognito User Pool. Contact your system administrator to update your role.
 
-### Q: [INSERT_QUESTION_4]
-**A:** [INSERT_ANSWER_4]
+### Q: What happens when my session expires?
+**A:** You'll see a "Session expired" prompt asking you to sign in again. Your conversation history is preserved — you won't lose your chat.
+
+### Q: Is my conversation data private?
+**A:** Yes. All data is encrypted at rest and in transit. PII is redacted from system logs. Internal staff can view conversation logs for quality assurance through the admin dashboard.
 
 ---
 
 ## Troubleshooting
 
-### Issue: [INSERT_COMMON_USER_ISSUE_1]
-**Solution:** [INSERT_SOLUTION]
+### Issue: Chat responses are slow or not appearing
+**Solution**: Check your internet connection. If the issue persists, try refreshing the page. The AI model may take a few seconds to begin streaming for complex queries.
 
-### Issue: [INSERT_COMMON_USER_ISSUE_2]
-**Solution:** [INSERT_SOLUTION]
+### Issue: "Authentication required" error
+**Solution**: Your session may have expired. Click "Sign in again" to re-authenticate. Your conversation will be preserved.
 
-### Issue: [INSERT_COMMON_USER_ISSUE_3]
-**Solution:** [INSERT_SOLUTION]
+### Issue: Citations not showing
+**Solution**: Citations only appear when the AI uses information from the Knowledge Base. General knowledge responses may not include citations.
+
+### Issue: Admin dashboard shows "Access denied"
+**Solution**: The admin dashboard requires the `internal_staff` role. Contact your administrator to verify your role assignment.
 
 ---
 
@@ -163,15 +173,6 @@ Navigate to the application URL: `[INSERT_APPLICATION_URL]`
 
 If you encounter issues not covered in this guide:
 
-- [INSERT_SUPPORT_CHANNEL_1 - e.g., "Open an issue on GitHub"]
-- [INSERT_SUPPORT_CHANNEL_2 - e.g., "Contact support at email@example.com"]
-- [INSERT_SUPPORT_CHANNEL_3]
-
----
-
-## Next Steps
-
-- Explore the [API Documentation](./APIDoc.md) for programmatic access
-- Check the [Architecture Deep Dive](./architectureDeepDive.md) to understand how the system works
-- See the [Modification Guide](./modificationGuide.md) if you want to customize the application
-
+- Use the escalation feature in the chatbot to request human support
+- Open an issue on the project's GitHub repository
+- Contact your system administrator

@@ -1,118 +1,86 @@
 # Deployment Guide
 
-This guide provides step-by-step instructions for deploying [INSERT_PROJECT_NAME].
+Step-by-step instructions for deploying the Learning Navigator.
 
 ---
 
 ## Table of Contents
 
-- [Deployment Guide](#deployment-guide)
-  - [Requirements](#requirements)
-  - [Pre-Deployment](#pre-deployment)
-    - [AWS Account Setup](#aws-account-setup)
-    - [CLI Tools Installation](#cli-tools-installation)
-    - [Environment Configuration](#environment-configuration)
-  - [Deployment](#deployment)
-    - [Backend Deployment](#backend-deployment)
-    - [Frontend Deployment](#frontend-deployment)
-  - [Post-Deployment Verification](#post-deployment-verification)
-  - [Troubleshooting](#troubleshooting)
+- [Requirements](#requirements)
+- [Pre-Deployment](#pre-deployment)
+- [Deployment](#deployment)
+- [Post-Deployment Verification](#post-deployment-verification)
+- [Troubleshooting](#troubleshooting)
+- [Cleanup](#cleanup)
 
 ---
 
 ## Requirements
 
-Before you deploy, you must have the following:
-
 ### Accounts
-- [ ] **AWS Account** - [Create an AWS Account](https://aws.amazon.com/)
-- [ ] [INSERT_ADDITIONAL_ACCOUNT_REQUIREMENTS]
+- [ ] AWS Account with Bedrock model access enabled for Amazon Nova Pro and Titan Embed Text V2
+- [ ] GitHub account (if deploying frontend via Amplify)
 
 ### CLI Tools
-- [ ] **AWS CLI** (v2.x) - [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-- [ ] **Node.js** (v18.x or later) - [Install Node.js](https://nodejs.org/)
-- [ ] **npm** (v9.x or later) - Included with Node.js
-- [ ] **AWS CDK** (v2.x) - Install via `npm install -g aws-cdk`
-- [ ] [INSERT_ADDITIONAL_CLI_TOOLS]
+- [ ] AWS CLI (v2.x) — [Install AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- [ ] Node.js (v18.x or later) — [Install Node.js](https://nodejs.org/)
+- [ ] npm (v9.x or later) — included with Node.js
+- [ ] AWS CDK (v2.x) — `npm install -g aws-cdk`
+- [ ] Git — [Install Git](https://git-scm.com/downloads)
 
-### Access Permissions
-- [ ] AWS IAM user/role with permissions for:
-  - CloudFormation
-  - Lambda
-  - API Gateway
-  - S3
-  - [INSERT_ADDITIONAL_AWS_SERVICES]
-- [ ] [INSERT_ADDITIONAL_PERMISSIONS]
+### AWS Permissions
+- [ ] IAM user/role with permissions for:
+  - CloudFormation, Lambda, API Gateway, S3, DynamoDB
+  - Cognito, Bedrock, Amplify, Secrets Manager
+  - IAM (for creating Lambda execution roles)
+  - CloudWatch Logs
 
-### Software Dependencies
-- [ ] Git - [Install Git](https://git-scm.com/downloads)
-- [ ] [INSERT_ADDITIONAL_DEPENDENCIES]
+### Bedrock Model Access
+- [ ] Enable access to the following models in the AWS Bedrock console:
+  - Amazon Titan Embed Text V2
+  - Amazon Nova Pro
 
 ---
 
 ## Pre-Deployment
 
-### AWS Account Setup
+### 1. Configure AWS CLI
 
-1. **Configure AWS CLI**
+```bash
+aws configure
+```
+
+Enter your AWS Access Key ID, Secret Access Key, region (`us-east-1` recommended), and output format (`json`).
+
+### 2. Bootstrap CDK (first-time only)
+
+```bash
+cdk bootstrap aws://<ACCOUNT_ID>/<REGION>
+```
+
+### 3. Install Dependencies
+
+```bash
+# Backend
+cd backend
+npm install
+
+# Frontend (for local development)
+cd ../frontend
+npm install
+```
+
+### 4. (Optional) Set Up GitHub Token for Amplify
+
+If deploying the frontend via Amplify with GitHub CI/CD:
+
+1. Create a GitHub personal access token with `repo` scope
+2. Store it in AWS Secrets Manager:
    ```bash
-   aws configure
+   aws secretsmanager create-secret \
+     --name learning-navigator/github-token \
+     --secret-string "<your-github-token>"
    ```
-   Enter your:
-   - AWS Access Key ID
-   - AWS Secret Access Key
-   - Default region: `us-east-1` (or [INSERT_PREFERRED_REGION])
-   - Default output format: `json`
-
-2. **Bootstrap CDK** (first-time CDK users only)
-   ```bash
-   cdk bootstrap aws://[ACCOUNT_ID]/[REGION]
-   ```
-   > **[PLACEHOLDER]** Replace `[ACCOUNT_ID]` with your AWS account ID and `[REGION]` with your deployment region
-
-### CLI Tools Installation
-
-1. **Install Node.js dependencies for backend**
-   ```bash
-   cd backend
-   npm install
-   ```
-
-2. **Install Node.js dependencies for frontend**
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-3. **Install AWS CDK globally** (if not already installed)
-   ```bash
-   npm install -g aws-cdk
-   ```
-
-### Environment Configuration
-
-1. **Create environment configuration file**
-   
-   [INSERT_ENV_CONFIGURATION_INSTRUCTIONS]
-   
-   ```bash
-   # Example: Create .env file
-   cp .env.example .env
-   ```
-
-2. **Configure required environment variables**
-   
-   [INSERT_ENV_VARIABLES_TABLE]
-   
-   | Variable | Description | Example |
-   |----------|-------------|---------|
-   | `[INSERT_VAR_1]` | [INSERT_DESCRIPTION] | [INSERT_EXAMPLE] |
-   | `[INSERT_VAR_2]` | [INSERT_DESCRIPTION] | [INSERT_EXAMPLE] |
-   | `[INSERT_VAR_3]` | [INSERT_DESCRIPTION] | [INSERT_EXAMPLE] |
-
-3. **[INSERT_ADDITIONAL_CONFIGURATION_STEPS]**
-   
-   > **Important**: [INSERT_IMPORTANT_NOTES]
 
 ---
 
@@ -120,144 +88,184 @@ Before you deploy, you must have the following:
 
 ### Backend Deployment
 
-1. **Navigate to the backend directory**
+1. Navigate to the backend directory:
    ```bash
    cd backend
    ```
 
-2. **Synthesize the CloudFormation template** (optional, for review)
+2. (Optional) Review the synthesized CloudFormation template:
    ```bash
    cdk synth
    ```
+   This also runs cdk-nag security checks automatically.
 
-3. **Deploy the backend stack**
+3. Review changes before deploying:
+   ```bash
+   cdk diff
+   ```
+
+4. Deploy the stack:
+
+   **Without Amplify** (local frontend development):
    ```bash
    cdk deploy
    ```
-   
-   When prompted:
-   - Review the IAM changes
-   - Type `y` to confirm deployment
 
-4. **Note the outputs**
-   
-   After deployment, note down the following outputs:
-   - **API Endpoint**: `[INSERT_OUTPUT_NAME]`
-   - **[INSERT_ADDITIONAL_OUTPUT]**: [INSERT_DESCRIPTION]
-   
-   > **Important**: Save these values as they will be needed for frontend configuration
+   **With Amplify** (full deployment with hosted frontend):
+   ```bash
+   cdk deploy \
+     -c githubOwner=<your-github-username> \
+     -c githubRepo=<your-repo-name> \
+     -c githubTokenSecretName=learning-navigator/github-token
+   ```
 
-### Frontend Deployment
+5. When prompted, review the IAM changes and type `y` to confirm.
 
-1. **Navigate to the frontend directory**
+6. Note the stack outputs after deployment:
+   - `NavStack.LearningNavigatorApiEndpoint` — API Gateway URL
+   - `NavStack.ChatHandlerFunctionUrl` — Chat Function URL
+   - `NavStack.UserPoolId` — Cognito User Pool ID
+   - `NavStack.UserPoolClientId` — Cognito Client ID
+   - `NavStack.AmplifyAppUrl` — Frontend URL (if Amplify enabled)
+
+### Frontend Local Development
+
+1. Navigate to the frontend directory:
    ```bash
    cd frontend
    ```
 
-2. **Configure the frontend environment**
-   
-   [INSERT_FRONTEND_CONFIG_INSTRUCTIONS]
-   
+2. Create `.env.local` from the template:
    ```bash
-   # Example: Update API endpoint
-   echo "NEXT_PUBLIC_API_URL=[YOUR_API_ENDPOINT]" >> .env.local
+   cp .env.example .env.local
    ```
 
-3. **Build the frontend**
+3. Fill in the values from CDK stack outputs:
    ```bash
-   npm run build
+   NEXT_PUBLIC_API_URL=https://<api-id>.execute-api.<region>.amazonaws.com/prod/
+   NEXT_PUBLIC_CHAT_FUNCTION_URL=https://<function-url-id>.lambda-url.<region>.on.aws/
+   NEXT_PUBLIC_COGNITO_USER_POOL_ID=<region>_xxxxxxxx
+   NEXT_PUBLIC_COGNITO_CLIENT_ID=<client-id>
+   NEXT_PUBLIC_AWS_REGION=us-east-1
    ```
 
-4. **Deploy the frontend**
-   
-   [INSERT_FRONTEND_DEPLOYMENT_METHOD]
-   
-   **Option A: Deploy to Vercel**
+4. Start the development server:
    ```bash
-   npx vercel --prod
+   npm run dev
    ```
-   
-   **Option B: Deploy to AWS Amplify**
-   ```bash
-   [INSERT_AMPLIFY_COMMANDS]
-   ```
-   
-   **Option C: [INSERT_ALTERNATIVE_DEPLOYMENT]**
-   ```bash
-   [INSERT_COMMANDS]
-   ```
+
+5. Open `http://localhost:3000` in your browser.
+
+### Create Initial Users
+
+After deployment, create users in the Cognito User Pool:
+
+```bash
+# Create an instructor user
+aws cognito-idp admin-create-user \
+  --user-pool-id <USER_POOL_ID> \
+  --username instructor@example.com \
+  --user-attributes Name=email,Value=instructor@example.com Name=custom:role,Value=instructor \
+  --temporary-password TempPass123!
+
+# Create an internal staff user (for admin dashboard)
+aws cognito-idp admin-create-user \
+  --user-pool-id <USER_POOL_ID> \
+  --username admin@example.com \
+  --user-attributes Name=email,Value=admin@example.com Name=custom:role,Value=internal_staff \
+  --temporary-password TempPass123!
+
+# Create a learner user
+aws cognito-idp admin-create-user \
+  --user-pool-id <USER_POOL_ID> \
+  --username learner@example.com \
+  --user-attributes Name=email,Value=learner@example.com Name=custom:role,Value=learner \
+  --temporary-password TempPass123!
+```
+
+Users will be prompted to change their password on first sign-in.
 
 ---
 
 ## Post-Deployment Verification
 
-### Verify Backend Deployment
+### 1. Verify Stack Status
 
-1. **Check CloudFormation stack status**
-   ```bash
-   aws cloudformation describe-stacks --stack-name [INSERT_STACK_NAME]
-   ```
-   
-   Expected status: `CREATE_COMPLETE` or `UPDATE_COMPLETE`
+```bash
+aws cloudformation describe-stacks --stack-name NavStack --query "Stacks[0].StackStatus"
+```
 
-2. **Test API endpoint**
-   ```bash
-   curl -X GET [INSERT_API_ENDPOINT]/[INSERT_TEST_PATH]
-   ```
-   
-   Expected response: [INSERT_EXPECTED_RESPONSE]
+Expected: `CREATE_COMPLETE` or `UPDATE_COMPLETE`
 
-3. **Check Lambda functions**
-   ```bash
-   aws lambda list-functions --query "Functions[?contains(FunctionName, '[INSERT_FUNCTION_PREFIX]')]"
-   ```
+### 2. Verify Knowledge Base Ingestion
 
-### Verify Frontend Deployment
+The 4 MHFA PDFs are automatically uploaded and ingested during deployment. Check the ingestion status:
 
-1. **Access the application**
-   
-   Navigate to: `[INSERT_FRONTEND_URL]`
+```bash
+aws bedrock-agent list-ingestion-jobs \
+  --knowledge-base-id <KB_ID> \
+  --data-source-id <DATA_SOURCE_ID>
+```
 
-2. **Test basic functionality**
-   - [ ] [INSERT_TEST_CASE_1]
-   - [ ] [INSERT_TEST_CASE_2]
-   - [ ] [INSERT_TEST_CASE_3]
+### 3. Test the Lead Capture API
+
+```bash
+curl -X POST '<API_URL>/leads' \
+  -H 'Content-Type: application/json' \
+  -d '{"name": "Test User", "email": "test@example.com", "area_of_interest": "Training"}'
+```
+
+Expected: `{"lead_id": "...", "status": "captured"}`
+
+### 4. Test the Frontend
+
+1. Navigate to the application URL (Amplify URL or `http://localhost:3000`)
+2. Sign in with a test user
+3. Send a test message like "What is Mental Health First Aid?"
+4. Verify streaming response with citations
+
+### 5. Test the Admin Dashboard
+
+1. Sign in as an `internal_staff` user
+2. Navigate to `/admin`
+3. Verify the four tabs load: Conversations, Analytics, Escalations, Feedback
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
-
-#### Issue: [INSERT_COMMON_ISSUE_1]
-**Symptoms**: [INSERT_SYMPTOMS]
+### CDK Bootstrap Error
+**Symptoms**: Error about CDK not being bootstrapped
 
 **Solution**:
 ```bash
-[INSERT_SOLUTION_COMMANDS]
+cdk bootstrap aws://<ACCOUNT_ID>/<REGION>
 ```
 
-#### Issue: [INSERT_COMMON_ISSUE_2]
-**Symptoms**: [INSERT_SYMPTOMS]
+### Bedrock Model Access Denied
+**Symptoms**: `AccessDeniedException` when calling Bedrock
 
-**Solution**:
-[INSERT_SOLUTION_STEPS]
+**Solution**: Enable model access in the AWS Bedrock console for Amazon Nova Pro and Titan Embed Text V2 in your deployment region.
 
-#### Issue: CDK Bootstrap Error
-**Symptoms**: Error message about CDK not being bootstrapped
+### Amplify Build Fails
+**Symptoms**: Amplify build fails with "deploy-manifest.json not found"
 
-**Solution**:
-```bash
-cdk bootstrap aws://[ACCOUNT_ID]/[REGION]
-```
+**Solution**: Ensure `AMPLIFY_MONOREPO_APP_ROOT=frontend` is set as an environment variable on both the Amplify app and branch. This is handled automatically by CDK.
 
-#### Issue: Permission Denied
-**Symptoms**: Access denied errors during deployment
+### CORS Errors
+**Symptoms**: Browser console shows CORS errors on API calls
 
-**Solution**:
-- Verify your AWS credentials are configured correctly
-- Ensure your IAM user/role has the required permissions
-- Check if you're deploying to the correct region
+**Solution**: Verify the frontend URL is included in the CORS allowed origins. For local development, `http://localhost:3000` should be allowed. The CDK stack uses wildcard CORS for the PoC.
+
+### Chat Streaming Not Working
+**Symptoms**: Chat responses don't stream, or connection drops
+
+**Solution**: Verify the `NEXT_PUBLIC_CHAT_FUNCTION_URL` points to the Lambda Function URL (not the API Gateway URL). The chat endpoint uses Function URL for SSE streaming.
+
+### Permission Denied on Deploy
+**Symptoms**: Access denied errors during `cdk deploy`
+
+**Solution**: Verify your AWS credentials and ensure your IAM user/role has the required permissions for all services in the stack.
 
 ---
 
@@ -270,14 +278,6 @@ cd backend
 cdk destroy
 ```
 
-> **Warning**: This will delete all resources created by this stack. Make sure to backup any important data before proceeding.
+This will delete all resources including DynamoDB tables, S3 buckets (with `autoDeleteObjects`), Lambda functions, API Gateway, Cognito User Pool, and Amplify app.
 
----
-
-## Next Steps
-
-After successful deployment:
-1. Review the [User Guide](./userGuide.md) to learn how to use the application
-2. Check the [API Documentation](./APIDoc.md) for integration details
-3. See the [Modification Guide](./modificationGuide.md) for customization options
-
+> **Warning**: This deletes all data. Back up any important conversation logs or user data before destroying the stack.

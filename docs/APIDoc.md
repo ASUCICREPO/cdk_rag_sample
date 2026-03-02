@@ -1,199 +1,447 @@
-# [INSERT_PROJECT_NAME] APIs
+# Learning Navigator APIs
 
-This document provides comprehensive API documentation for [INSERT_PROJECT_NAME].
+This document provides comprehensive API documentation for the Learning Navigator chatbot.
 
 ---
 
 ## Overview
 
-[INSERT_API_OVERVIEW - Brief description of what the APIs do and their purpose]
+The Learning Navigator exposes two API surfaces:
+
+1. **Chat API** — Lambda Function URL with SSE streaming for real-time chat
+2. **REST API** — API Gateway endpoints for leads, feedback, escalations, and admin dashboard
 
 ---
 
-## Base URL
+## Base URLs
+
+### Chat API (Lambda Function URL)
 
 ```
-https://[INSERT_API_ID].execute-api.[INSERT_REGION].amazonaws.com/[INSERT_STAGE]/
+https://<function-url-id>.lambda-url.<region>.on.aws/
 ```
 
-> **[PLACEHOLDER]** Replace with your actual API Gateway endpoint after deployment
+> After deployment, find this value in the CDK stack output `ChatHandlerFunctionUrl` or the `NEXT_PUBLIC_CHAT_FUNCTION_URL` environment variable.
 
-**Example:**
+### REST API (API Gateway)
+
 ```
-https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/prod/
+https://<api-id>.execute-api.<region>.amazonaws.com/prod/
 ```
+
+> After deployment, find this value in the CDK stack output or the `NEXT_PUBLIC_API_URL` environment variable.
 
 ---
 
 ## Authentication
 
-[INSERT_AUTHENTICATION_METHOD - Describe how API requests should be authenticated]
+Most endpoints require a Cognito JWT token passed as a Bearer token in the `Authorization` header.
 
-### Headers Required
 | Header | Description | Required |
 |--------|-------------|----------|
-| `[INSERT_HEADER_1]` | [INSERT_DESCRIPTION] | Yes/No |
-| `[INSERT_HEADER_2]` | [INSERT_DESCRIPTION] | Yes/No |
+| `Authorization` | `Bearer <cognito-id-token>` | Yes (except POST /leads) |
 | `Content-Type` | `application/json` | Yes |
+| `Accept` | `text/event-stream` (chat only) | Chat endpoint only |
+
+The ID token (not access token) must be used. It carries the `custom:role` claim needed for role-based personalization.
 
 ---
 
-## 1) [INSERT_API_GROUP_1_NAME - e.g., "Chat Endpoints"]
+## 1) Chat Endpoint
 
-[INSERT_GROUP_DESCRIPTION - Brief description of this group of endpoints]
+Real-time streaming chat powered by RAG retrieval and Amazon Nova Pro.
 
 ---
 
-#### POST /[INSERT_ENDPOINT_1] — [INSERT_BRIEF_DESCRIPTION]
+#### POST / — Send a chat message (SSE streaming)
 
-- **Purpose**: [INSERT_DETAILED_PURPOSE]
+- **URL**: Chat Lambda Function URL (not API Gateway)
+- **Auth**: Bearer token (Cognito ID token)
+- **Purpose**: Send a user query and receive a streaming AI response with citations
 
 - **Request body**:
 ```json
 {
-  "[INSERT_FIELD_1]": "[INSERT_TYPE] - [INSERT_DESCRIPTION]",
-  "[INSERT_FIELD_2]": "[INSERT_TYPE] - [INSERT_DESCRIPTION]",
-  "[INSERT_FIELD_3]": "[INSERT_TYPE] - [INSERT_DESCRIPTION]"
+  "query": "string — the user's question (required)",
+  "session_id": "string — session identifier, min 33 chars (required)",
+  "language": "string — 'en' or 'es' (optional, defaults to 'en')"
 }
 ```
 
 - **Example request**:
 ```json
 {
-  "[INSERT_FIELD_1]": "[INSERT_EXAMPLE_VALUE]",
-  "[INSERT_FIELD_2]": "[INSERT_EXAMPLE_VALUE]"
+  "query": "How do I manage my upcoming MHFA courses?",
+  "session_id": "session_m1abc123_def456ghi789jkl",
+  "language": "en"
 }
 ```
 
-- **Response**:
-```json
-{
-  "[INSERT_RESPONSE_FIELD_1]": "[INSERT_TYPE] - [INSERT_DESCRIPTION]",
-  "[INSERT_RESPONSE_FIELD_2]": "[INSERT_TYPE] - [INSERT_DESCRIPTION]"
-}
+- **Response**: Server-Sent Events stream with the following event types:
+
+```
+event: text-delta
+data: {"type": "text-delta", "content": "Here are the steps..."}
+
+event: text-delta
+data: {"type": "text-delta", "content": " to manage your courses:"}
+
+event: citations
+data: {"type": "citations", "sources": [{"document": "MHFA_InstructorPolicyHandbook.pdf", "section": "s3://bucket/key"}]}
+
+event: finish
+data: {"type": "finish", "message_id": "uuid-string"}
 ```
 
-- **Example response**:
-```json
-{
-  "[INSERT_RESPONSE_FIELD_1]": "[INSERT_EXAMPLE_VALUE]",
-  "[INSERT_RESPONSE_FIELD_2]": "[INSERT_EXAMPLE_VALUE]"
-}
-```
+- **SSE Event Types**:
+
+| Event | Description |
+|-------|-------------|
+| `text-delta` | Incremental text chunk of the AI response |
+| `citations` | Source document references from KB retrieval |
+| `finish` | Stream complete, includes `message_id` |
+| `error` | Error occurred during processing |
 
 - **Status codes**:
-  - `200 OK` - [INSERT_SUCCESS_DESCRIPTION]
-  - `400 Bad Request` - [INSERT_ERROR_DESCRIPTION]
-  - `500 Internal Server Error` - [INSERT_ERROR_DESCRIPTION]
+  - `200 OK` — streaming response initiated
+  - `400 Bad Request` — missing or invalid fields
+  - `401 Unauthorized` — missing or invalid JWT token
 
 ---
 
-#### GET /[INSERT_ENDPOINT_2] — [INSERT_BRIEF_DESCRIPTION]
+## 2) Lead Capture Endpoint
 
-- **Purpose**: [INSERT_DETAILED_PURPOSE]
-
-- **Query parameters**:
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `[INSERT_PARAM_1]` | [INSERT_TYPE] | Yes/No | [INSERT_DESCRIPTION] |
-| `[INSERT_PARAM_2]` | [INSERT_TYPE] | Yes/No | [INSERT_DESCRIPTION] |
-
-- **Example request**:
-```
-GET /[INSERT_ENDPOINT]?[INSERT_PARAM_1]=[INSERT_VALUE]&[INSERT_PARAM_2]=[INSERT_VALUE]
-```
-
-- **Response**:
-```json
-{
-  "[INSERT_RESPONSE_FIELD]": "[INSERT_TYPE] - [INSERT_DESCRIPTION]"
-}
-```
+Captures contact information from prospective users. No authentication required.
 
 ---
 
-## 2) [INSERT_API_GROUP_2_NAME - e.g., "Document Endpoints"]
+#### POST /leads — Submit lead information
 
-[INSERT_GROUP_DESCRIPTION]
-
----
-
-#### POST /[INSERT_ENDPOINT_3] — [INSERT_BRIEF_DESCRIPTION]
-
-- **Purpose**: [INSERT_DETAILED_PURPOSE]
+- **Auth**: None (unauthenticated)
+- **Purpose**: Capture name, email, and area of interest from prospective users
 
 - **Request body**:
 ```json
 {
-  "[INSERT_FIELD]": "[INSERT_TYPE] - [INSERT_DESCRIPTION]"
+  "name": "string — contact name (required)",
+  "email": "string — valid email address (required)",
+  "area_of_interest": "string — area of interest (required)",
+  "session_id": "string — associate with chat session (optional)"
 }
 ```
 
-- **Response**:
+- **Example request**:
 ```json
 {
-  "[INSERT_RESPONSE_FIELD]": "[INSERT_TYPE] - [INSERT_DESCRIPTION]"
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "area_of_interest": "Instructor Certification",
+  "session_id": "session_m1abc123_def456ghi789jkl"
+}
+```
+
+- **Success response** (`200`):
+```json
+{
+  "lead_id": "uuid-string",
+  "status": "captured"
+}
+```
+
+- **Error responses**:
+  - `400` — `{"error": "Missing required field: name"}` / `"Invalid email format"`
+  - `500` — `{"error": "Internal server error"}`
+
+---
+
+## 3) Feedback Endpoint
+
+Records thumbs up/down ratings on chatbot responses.
+
+---
+
+#### POST /feedback — Submit response feedback
+
+- **Auth**: Bearer token (Cognito ID token)
+- **Purpose**: Rate a specific chatbot response as positive or negative
+
+- **Request body**:
+```json
+{
+  "message_id": "string — ID of the rated message (required)",
+  "session_id": "string — session identifier (required)",
+  "rating": "string — 'positive' or 'negative' (required)"
+}
+```
+
+- **Example request**:
+```json
+{
+  "message_id": "msg_1234567890_abc",
+  "session_id": "session_m1abc123_def456ghi789jkl",
+  "rating": "positive"
+}
+```
+
+- **Success response** (`200`):
+```json
+{
+  "status": "recorded"
+}
+```
+
+- **Error responses**:
+  - `400` — `{"error": "Rating must be 'positive' or 'negative'"}`
+  - `401` — `{"error": "Authentication required"}`
+  - `500` — `{"error": "Internal server error"}`
+
+---
+
+## 4) Escalation Endpoint
+
+Creates escalation requests for human follow-up.
+
+---
+
+#### POST /escalations — Create escalation request
+
+- **Auth**: Bearer token (Cognito ID token)
+- **Purpose**: Escalate a conversation to human support
+
+- **Request body**:
+```json
+{
+  "session_id": "string — session identifier (required)",
+  "summary": "string — conversation summary (required)",
+  "contact_email": "string — valid email for follow-up (required)"
+}
+```
+
+- **Example request**:
+```json
+{
+  "session_id": "session_m1abc123_def456ghi789jkl",
+  "summary": "User needs help with course scheduling conflict",
+  "contact_email": "jane@example.com"
+}
+```
+
+- **Success response** (`200`):
+```json
+{
+  "escalation_id": "uuid-string",
+  "status": "pending"
+}
+```
+
+- **Error responses**:
+  - `400` — `{"error": "Missing required field: session_id"}` / `"Invalid email format"`
+  - `401` — `{"error": "Authentication required"}`
+  - `500` — `{"error": "Internal server error"}`
+
+---
+
+## 5) Admin Endpoints
+
+All admin endpoints require authentication and `internal_staff` role. Non-staff users receive `403 Forbidden`.
+
+---
+
+#### GET /admin/conversations — List conversation sessions
+
+- **Purpose**: Retrieve conversation sessions with optional filtering
+
+- **Query parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `start_date` | string (ISO 8601) | No | Filter sessions from this date |
+| `end_date` | string (ISO 8601) | No | Filter sessions until this date |
+| `role` | string | No | Filter by user role (`instructor`, `internal_staff`, `learner`) |
+| `language` | string | No | Filter by language (`en`, `es`) |
+| `sentiment` | string (decimal) | No | Filter by minimum sentiment score |
+
+- **Example request**:
+```
+GET /admin/conversations?role=instructor&start_date=2025-01-01&language=en
+```
+
+- **Success response** (`200`):
+```json
+{
+  "conversations": [
+    {
+      "session_id": "session_abc123...",
+      "user_role": "instructor",
+      "language": "en",
+      "timestamp": "2025-01-15T10:30:00Z",
+      "content": "How do I manage courses?",
+      "role": "user"
+    }
+  ],
+  "count": 42
 }
 ```
 
 ---
 
-#### DELETE /[INSERT_ENDPOINT_4] — [INSERT_BRIEF_DESCRIPTION]
+#### GET /admin/conversations/{session_id} — Get full session messages
 
-- **Purpose**: [INSERT_DETAILED_PURPOSE]
+- **Purpose**: Retrieve all messages for a specific conversation session
 
-- **Path parameters**:
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `[INSERT_PARAM]` | [INSERT_TYPE] | [INSERT_DESCRIPTION] |
-
-- **Response**:
+- **Success response** (`200`):
 ```json
 {
-  "message": "string - Success/error message"
+  "session_id": "session_abc123...",
+  "messages": [
+    {
+      "session_id": "session_abc123...",
+      "timestamp": "2025-01-15T10:30:00Z",
+      "role": "user",
+      "content": "How do I manage courses?",
+      "user_role": "instructor",
+      "language": "en"
+    },
+    {
+      "session_id": "session_abc123...",
+      "timestamp": "2025-01-15T10:30:05Z",
+      "role": "assistant",
+      "content": "Here are the steps to manage your courses..."
+    }
+  ]
+}
+```
+
+- **Error responses**:
+  - `404` — `{"error": "Session not found"}`
+
+---
+
+#### GET /admin/analytics — Usage metrics
+
+- **Purpose**: Retrieve aggregated usage metrics for a time period
+
+- **Query parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `period` | string | No | `7d`, `30d`, or `90d` (default: `7d`) |
+
+- **Success response** (`200`):
+```json
+{
+  "period": "7d",
+  "total_conversations": 150,
+  "active_sessions": 12,
+  "average_session_duration_seconds": 245.5,
+  "total_messages": 890
 }
 ```
 
 ---
 
-## 3) [INSERT_API_GROUP_3_NAME - e.g., "Admin Endpoints"]
+#### GET /admin/analytics/sentiment — Sentiment trends
 
-[INSERT_GROUP_DESCRIPTION]
+- **Purpose**: Retrieve aggregated sentiment trends over time
 
----
+- **Query parameters**:
 
-#### [INSERT_HTTP_METHOD] /[INSERT_ENDPOINT] — [INSERT_BRIEF_DESCRIPTION]
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `period` | string | No | `7d`, `30d`, or `90d` (default: `7d`) |
 
-- **Purpose**: [INSERT_DETAILED_PURPOSE]
-
-- **Request/Response**: [INSERT_DETAILS]
-
----
-
-## Response Format
-
-All API responses follow this general structure:
-
-### Success Response
+- **Success response** (`200`):
 ```json
 {
-  "statusCode": 200,
-  "body": {
-    "[INSERT_DATA_FIELD]": "[INSERT_DATA]"
-  }
+  "period": "7d",
+  "trend": [
+    {
+      "date": "2025-01-15",
+      "average_sentiment": 0.72,
+      "message_count": 45
+    }
+  ]
 }
 ```
 
-### Error Response
+---
+
+#### GET /admin/feedback — Feedback aggregation
+
+- **Purpose**: Retrieve positive/negative feedback ratios over time
+
+- **Query parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `period` | string | No | `7d`, `30d`, or `90d` (default: `7d`) |
+
+- **Success response** (`200`):
 ```json
 {
-  "statusCode": "[INSERT_ERROR_CODE]",
-  "error": {
-    "message": "[INSERT_ERROR_MESSAGE]",
-    "code": "[INSERT_ERROR_CODE_STRING]"
-  }
+  "period": "7d",
+  "positive_count": 120,
+  "negative_count": 15,
+  "total_count": 135,
+  "ratio": 0.8889,
+  "trend": [
+    {
+      "date": "2025-01-15",
+      "positive": 18,
+      "negative": 2,
+      "ratio": 0.9
+    }
+  ]
 }
 ```
+
+---
+
+#### GET /admin/escalations — List escalations
+
+- **Purpose**: Retrieve escalation requests filtered by status
+
+- **Query parameters**:
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `status` | string | No | `pending` or `resolved` (default: `pending`) |
+
+- **Success response** (`200`):
+```json
+{
+  "escalations": [
+    {
+      "escalation_id": "uuid-string",
+      "session_id": "session_abc123...",
+      "summary": "User needs help with scheduling",
+      "user_role": "instructor",
+      "contact_email": "jane@example.com",
+      "status": "pending",
+      "created_at": "2025-01-15T10:30:00Z"
+    }
+  ],
+  "count": 5
+}
+```
+
+---
+
+#### PATCH /admin/escalations/{id} — Resolve escalation
+
+- **Purpose**: Mark an escalation as resolved
+
+- **Success response** (`200`):
+```json
+{
+  "escalation_id": "uuid-string",
+  "status": "resolved",
+  "resolved_at": "2025-01-15T14:00:00Z"
+}
+```
+
+- **Error responses**:
+  - `404` — `{"error": "Escalation not found"}`
 
 ---
 
@@ -201,86 +449,78 @@ All API responses follow this general structure:
 
 | Code | Name | Description |
 |------|------|-------------|
-| `400` | Bad Request | [INSERT_DESCRIPTION] |
-| `401` | Unauthorized | [INSERT_DESCRIPTION] |
-| `403` | Forbidden | [INSERT_DESCRIPTION] |
-| `404` | Not Found | [INSERT_DESCRIPTION] |
-| `429` | Too Many Requests | [INSERT_DESCRIPTION] |
-| `500` | Internal Server Error | [INSERT_DESCRIPTION] |
+| `400` | Bad Request | Missing required fields, invalid format, or validation failure |
+| `401` | Unauthorized | Missing or invalid JWT token |
+| `403` | Forbidden | Authenticated but insufficient role (admin endpoints require `internal_staff`) |
+| `404` | Not Found | Requested resource does not exist |
+| `500` | Internal Server Error | Unexpected server-side failure |
 
 ---
 
 ## Rate Limiting
 
-[INSERT_RATE_LIMITING_DETAILS - Describe any rate limits on the API]
+API Gateway throttling is configured at the stage level:
 
-- **Requests per second**: [INSERT_LIMIT]
-- **Requests per day**: [INSERT_LIMIT]
-- **Burst limit**: [INSERT_LIMIT]
+- **Rate limit**: 100 requests per second
+- **Burst limit**: 50 requests
+
+The Chat Function URL does not have API Gateway throttling but is subject to Lambda concurrency limits.
 
 ---
 
 ## SDK / Client Examples
 
-### JavaScript/TypeScript
+### JavaScript/TypeScript (Chat with SSE)
 ```typescript
-// [INSERT_EXAMPLE_CODE]
-const response = await fetch('[INSERT_API_URL]/[INSERT_ENDPOINT]', {
+const response = await fetch(CHAT_FUNCTION_URL, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    '[INSERT_AUTH_HEADER]': '[INSERT_AUTH_VALUE]'
+    'Accept': 'text/event-stream',
+    'Authorization': `Bearer ${idToken}`
   },
   body: JSON.stringify({
-    [INSERT_REQUEST_BODY]
+    query: 'What is MHFA training?',
+    session_id: 'session_abc123...',
+    language: 'en'
+  })
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+let buffer = '';
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  buffer += decoder.decode(value, { stream: true });
+  // Parse SSE events from buffer
+}
+```
+
+### JavaScript/TypeScript (REST API)
+```typescript
+const response = await fetch(`${API_URL}/leads`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'Jane Doe',
+    email: 'jane@example.com',
+    area_of_interest: 'Instructor Certification'
   })
 });
 
 const data = await response.json();
 ```
 
-### Python
-```python
-# [INSERT_EXAMPLE_CODE]
-import requests
-
-response = requests.post(
-    '[INSERT_API_URL]/[INSERT_ENDPOINT]',
-    headers={
-        'Content-Type': 'application/json',
-        '[INSERT_AUTH_HEADER]': '[INSERT_AUTH_VALUE]'
-    },
-    json={
-        '[INSERT_FIELD]': '[INSERT_VALUE]'
-    }
-)
-
-data = response.json()
-```
-
 ### cURL
 ```bash
-curl -X POST '[INSERT_API_URL]/[INSERT_ENDPOINT]' \
+# Lead capture (unauthenticated)
+curl -X POST 'https://<api-id>.execute-api.us-east-1.amazonaws.com/prod/leads' \
   -H 'Content-Type: application/json' \
-  -H '[INSERT_AUTH_HEADER]: [INSERT_AUTH_VALUE]' \
-  -d '{
-    "[INSERT_FIELD]": "[INSERT_VALUE]"
-  }'
+  -d '{"name": "Jane Doe", "email": "jane@example.com", "area_of_interest": "Training"}'
+
+# Admin analytics (authenticated)
+curl -X GET 'https://<api-id>.execute-api.us-east-1.amazonaws.com/prod/admin/analytics?period=7d' \
+  -H 'Authorization: Bearer <cognito-id-token>'
 ```
-
----
-
-## Changelog
-
-| Version | Date | Changes |
-|---------|------|---------|
-| [INSERT_VERSION] | [INSERT_DATE] | [INSERT_CHANGES] |
-
----
-
-## Support
-
-For API-related issues or questions:
-- [INSERT_SUPPORT_CHANNEL]
-- [INSERT_DOCUMENTATION_LINK]
-
