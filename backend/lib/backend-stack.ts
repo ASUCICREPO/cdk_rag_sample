@@ -400,13 +400,11 @@ export class NavStack extends cdk.Stack {
           '          - node_modules/**/*',
           '          - .next/cache/**/*',
         ].join('\n'),
-        customRules: [
-          {
-            source: '</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>',
-            target: '/index.html',
-            status: '200',
-          },
-        ],
+        // ADR: No custom rewrite rules for SSR (WEB_COMPUTE)
+        // Rationale: Amplify's compute layer handles SSR routing automatically.
+        //   SPA-style rewrite rules (catch-all → /index.html) conflict with SSR
+        //   because there is no static index.html in an SSR deployment.
+        // Alternative: SPA rewrite rule (rejected - causes 404 on SSR apps)
       });
 
       amplifyAppUrl = `https://main.${amplifyApp.attrAppId}.amplifyapp.com`;
