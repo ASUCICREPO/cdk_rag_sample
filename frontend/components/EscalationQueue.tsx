@@ -51,8 +51,10 @@ export default function EscalationQueue({ token }: EscalationQueueProps) {
       clearTimeout(timeoutId);
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: Escalation[] = await res.json();
-      setEscalations(data);
+      const data = await res.json();
+      // Backend returns {"escalations": [...], "count": N}
+      const escalationList: Escalation[] = Array.isArray(data) ? data : (data.escalations ?? []);
+      setEscalations(escalationList);
     } catch (err) {
       const message =
         err instanceof Error && err.name === 'AbortError'
