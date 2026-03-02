@@ -177,7 +177,7 @@ export default function AppShell() {
             if (user) {
               refreshAuth();
             }
-            return null;
+            return <></>;
           }}
         </Authenticator>
         <button

@@ -14,11 +14,12 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as amplify from 'aws-cdk-lib/aws-amplify';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import * as os from 'os';
 import * as path from 'path';
 import { Bucket as VectorsBucket, Index as VectorIndex } from 'cdk-s3-vectors';
 
-export class BackendStack extends cdk.Stack {
+export class NavStack extends cdk.Stack {
   // Expose resources for other stacks/tasks
   public readonly conversationsTable: dynamodb.Table;
   public readonly leadsTable: dynamodb.Table;
@@ -68,7 +69,7 @@ export class BackendStack extends cdk.Stack {
       partitionKey: { name: 'session_id', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'timestamp', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
     });
@@ -86,7 +87,7 @@ export class BackendStack extends cdk.Stack {
       partitionKey: { name: 'lead_id', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'created_at', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
     });
@@ -97,7 +98,7 @@ export class BackendStack extends cdk.Stack {
       partitionKey: { name: 'message_id', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'session_id', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
     });
@@ -115,7 +116,7 @@ export class BackendStack extends cdk.Stack {
       partitionKey: { name: 'escalation_id', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'created_at', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       encryption: dynamodb.TableEncryption.AWS_MANAGED,
     });
@@ -140,7 +141,8 @@ export class BackendStack extends cdk.Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       encryption: s3.BucketEncryption.S3_MANAGED,
       enforceSSL: true,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
       objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_PREFERRED,
     });
 
@@ -150,7 +152,8 @@ export class BackendStack extends cdk.Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
       enforceSSL: true,
       versioned: true,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
       serverAccessLogsBucket: accessLogsBucket,
       serverAccessLogsPrefix: 'documents-bucket-logs/',
     });
@@ -249,11 +252,15 @@ export class BackendStack extends cdk.Stack {
     });
 
     // Override with the correct CloudFormation S3VectorsConfiguration property
-    const vectorsBucketArn = `arn:aws:s3vectors:${this.region}:${this.account}:storage-bucket/${projectPrefix}-vectors-${this.account}-${this.region}`;
+    const vectorsBucketArn = `arn:aws:s3vectors:${this.region}:${this.account}:bucket/${projectPrefix}-vectors-${this.account}-${this.region}`;
     this.knowledgeBase.addPropertyOverride('StorageConfiguration.S3VectorsConfiguration', {
       VectorBucketArn: vectorsBucketArn,
       IndexName: `${projectPrefix}-vector-index`,
     });
+
+    // Ensure S3 Vectors bucket and index are created before the Knowledge Base
+    this.knowledgeBase.node.addDependency(this.vectorsBucket);
+    this.knowledgeBase.node.addDependency(this.vectorIndex);
 
     // S3 data source with hierarchical chunking
     const documentsDataSource = new bedrock.CfnDataSource(this, 'DocumentsDataSource', {
@@ -311,7 +318,7 @@ export class BackendStack extends cdk.Stack {
         requireSymbols: true,
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     this.userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
@@ -346,11 +353,14 @@ export class BackendStack extends cdk.Stack {
 
     const isAmplifyEnabled = !!(githubOwner && githubRepo && githubTokenSecretName);
 
-    // Compute CORS allowed origins — includes Amplify URL when enabled
+    // Compute CORS allowed origins
+    // ADR: Wildcard CORS for PoC | Rationale: Avoids circular dependency between Amplify
+    //   and API Gateway/Function URL. Will tighten to specific origins for production.
+    // Alternative: Amplify URL in corsOrigins (rejected - creates CloudFormation circular dependency)
     let amplifyAppUrl: string | undefined;
     let amplifyApp: amplify.CfnApp | undefined;
     let amplifyMainBranch: amplify.CfnBranch | undefined;
-    const corsOrigins: string[] = ['http://localhost:3000'];
+    const corsOrigins: string[] = ['*'];
 
     if (isAmplifyEnabled) {
       // Retrieve GitHub OAuth token from Secrets Manager (never hardcoded)
@@ -394,7 +404,6 @@ export class BackendStack extends cdk.Stack {
       });
 
       amplifyAppUrl = `https://main.${amplifyApp.attrAppId}.amplifyapp.com`;
-      corsOrigins.push(amplifyAppUrl);
 
       // Add "main" branch with environment variables for the frontend
       amplifyMainBranch = new amplify.CfnBranch(this, 'AmplifyMainBranch', {
@@ -432,6 +441,11 @@ export class BackendStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(5),
       memorySize: 512,
       architecture: lambdaArch,
+      logGroup: new logs.LogGroup(this, 'ChatHandlerLogGroup', {
+        logGroupName: `/aws/lambda/${projectPrefix}-chat-handler`,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        retention: logs.RetentionDays.ONE_MONTH,
+      }),
       environment: {
         CONVERSATIONS_TABLE_NAME: this.conversationsTable.tableName,
         KNOWLEDGE_BASE_ID: this.knowledgeBase.attrKnowledgeBaseId,
@@ -466,7 +480,7 @@ export class BackendStack extends cdk.Stack {
       invokeMode: lambda.InvokeMode.RESPONSE_STREAM,
       cors: {
         allowedOrigins: corsOrigins,
-        allowedMethods: [lambda.HttpMethod.POST, lambda.HttpMethod.OPTIONS],
+        allowedMethods: [lambda.HttpMethod.POST],
         allowedHeaders: [
           'Content-Type',
           'Authorization',
@@ -492,6 +506,11 @@ export class BackendStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda', 'lead-capture')),
       timeout: cdk.Duration.seconds(30),
       architecture: lambdaArch,
+      logGroup: new logs.LogGroup(this, 'LeadCaptureLogGroup', {
+        logGroupName: `/aws/lambda/${projectPrefix}-lead-capture`,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        retention: logs.RetentionDays.ONE_MONTH,
+      }),
       environment: {
         LEADS_TABLE_NAME: this.leadsTable.tableName,
       },
@@ -512,6 +531,11 @@ export class BackendStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda', 'feedback-handler')),
       timeout: cdk.Duration.seconds(30),
       architecture: lambdaArch,
+      logGroup: new logs.LogGroup(this, 'FeedbackHandlerLogGroup', {
+        logGroupName: `/aws/lambda/${projectPrefix}-feedback-handler`,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        retention: logs.RetentionDays.ONE_MONTH,
+      }),
       environment: {
         FEEDBACK_TABLE_NAME: this.feedbackTable.tableName,
         USER_POOL_ID: this.userPool.userPoolId,
@@ -534,6 +558,11 @@ export class BackendStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda', 'escalation-handler')),
       timeout: cdk.Duration.seconds(30),
       architecture: lambdaArch,
+      logGroup: new logs.LogGroup(this, 'EscalationHandlerLogGroup', {
+        logGroupName: `/aws/lambda/${projectPrefix}-escalation-handler`,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        retention: logs.RetentionDays.ONE_MONTH,
+      }),
       environment: {
         ESCALATIONS_TABLE_NAME: this.escalationsTable.tableName,
         USER_POOL_ID: this.userPool.userPoolId,
@@ -559,6 +588,11 @@ export class BackendStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda', 'admin-handler')),
       timeout: cdk.Duration.seconds(30),
       architecture: lambdaArch,
+      logGroup: new logs.LogGroup(this, 'AdminHandlerLogGroup', {
+        logGroupName: `/aws/lambda/${projectPrefix}-admin-handler`,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        retention: logs.RetentionDays.ONE_MONTH,
+      }),
       environment: {
         CONVERSATIONS_TABLE_NAME: this.conversationsTable.tableName,
         FEEDBACK_TABLE_NAME: this.feedbackTable.tableName,
@@ -590,6 +624,11 @@ export class BackendStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda', 'ingestion-trigger')),
       timeout: cdk.Duration.seconds(30),
       architecture: lambdaArch,
+      logGroup: new logs.LogGroup(this, 'IngestionTriggerLogGroup', {
+        logGroupName: `/aws/lambda/${projectPrefix}-ingestion-trigger`,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+        retention: logs.RetentionDays.ONE_MONTH,
+      }),
       environment: {
         KNOWLEDGE_BASE_ID: this.knowledgeBase.attrKnowledgeBaseId,
         DATA_SOURCE_ID: documentsDataSource.attrDataSourceId,
