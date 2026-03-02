@@ -52,11 +52,12 @@ def log(step: str, status: str, message: str) -> None:
 # CORS helpers
 # ---------------------------------------------------------------------------
 def _cors_headers() -> dict:
-    return {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",
-        "Access-Control-Allow-Methods": "POST,OPTIONS",
-    }
+    # ADR: CORS headers managed by Lambda Function URL config in CDK (backend-stack.ts)
+    # Rationale: Function URL automatically adds Access-Control-Allow-Origin from its
+    #   cors config. If we also set it here, the browser receives duplicate values
+    #   (e.g. "*, https://example.com") and rejects the response.
+    # Alternative: Set headers here instead of CDK (rejected - Function URL always adds its own)
+    return {}
 
 
 def _error_response(status_code: int, message: str) -> dict:

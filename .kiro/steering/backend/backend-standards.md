@@ -116,32 +116,102 @@ myBucket.grantRead(myFunction);
 
 ## Amplify
 
-Include SPA rewrite rule (catch-all → index.html); construct `amplifyAppUrl` from `appId` for CORS origins; pass backend URLs/IDs via `addEnvironment`; auto-trigger build on deploy.
+**Platform**: Use `WEB_COMPUTE` for Next.js SSR apps. Amplify's compute layer handles all routing automatically.
+
+**CRITICAL — No custom rewrite rules for SSR apps**: Do NOT add SPA-style `customRules` (catch-all → `/index.html`) when using `WEB_COMPUTE` platform. The SPA rewrite intercepts requests before the SSR compute layer, causing 404 errors because there is no static `index.html` in an SSR deployment. Amplify handles routing natively for SSR.
+
+**Next.js version**: Amplify Hosting compute supports Next.js 12–15 only. Do NOT use Next.js 16+ until Amplify officially adds support. Check AWS docs before upgrading.
+
+**Monorepo setup**: For monorepo projects (frontend in a subdirectory), you MUST set `AMPLIFY_MONOREPO_APP_ROOT` as an environment variable on both the app and branch. Without it, Amplify's framework adapter won't generate `deploy-manifest.json` and the build will fail. The value must match the `appRoot` in the buildSpec.
+
+**Auto-build on CDK deploy**: `enableAutoBuild: true` only triggers builds on git pushes, NOT on CDK deploys. To auto-trigger a build after every `cdk deploy`, use an `AwsCustomResource` that calls `amplify:StartJob`. This ensures environment variable changes (API URLs, Cognito IDs) are picked up immediately without a manual rebuild. Use `Date.now()` in the `PhysicalResourceId` to force execution on every deploy.
+
+Construct `amplifyAppUrl` from `appId` for CORS origins; pass backend URLs/IDs via environment variables on the branch.
 
 ```typescript
-const amplifyApp = new amplify.App(this, "AmplifyFrontend", {
-  sourceCodeProvider: new amplify.GitHubSourceCodeProvider({
-    owner: githubOwner, repository: githubRepo, oauthToken: githubTokenSecret.secretValue,
-  }),
-  buildSpec: cdk.aws_codebuild.BuildSpec.fromObjectToYaml({ /* build config */ }),
-  customRules: [{
-    source: "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)/>",
-    target: "/index.html", status: amplify.RedirectStatus.REWRITE,
-  }],
+import { AwsCustomResource, AwsCustomResourcePolicy, PhysicalResourceId } from 'aws-cdk-lib/custom-resources';
+
+const amplifyApp = new amplify.CfnApp(this, 'AmplifyApp', {
+  name: `${projectPrefix}-frontend`,
+  repository: `https://github.com/${githubOwner}/${githubRepo}`,
+  oauthToken: githubTokenSecret.secretValue.unsafeUnwrap(),
+  platform: 'WEB_COMPUTE',
+  // Monorepo buildSpec — appRoot tells Amplify where the frontend lives
+  buildSpec: [
+    'version: 1',
+    'applications:',
+    '  - appRoot: frontend',
+    '    frontend:',
+    '      phases:',
+    '        preBuild:',
+    '          commands:',
+    '            - npm ci',
+    '        build:',
+    '          commands:',
+    '            - npm run build',
+    '      artifacts:',
+    '        baseDirectory: .next',
+    '        files:',
+    '          - "**/*"',
+    '      cache:',
+    '        paths:',
+    '          - node_modules/**/*',
+    '          - .next/cache/**/*',
+  ].join('\n'),
+  // NO customRules — SSR routing is handled by Amplify compute layer
+  environmentVariables: [
+    { name: 'AMPLIFY_MONOREPO_APP_ROOT', value: 'frontend' },
+    // ... backend URLs set after API/Function URL creation
+  ],
 });
 
-const mainBranch = amplifyApp.addBranch("main");
-const amplifyAppUrl = `https://main.${amplifyApp.appId}.amplifyapp.com`;
-mainBranch.addEnvironment('REACT_APP_API_URL', apiUrl);
+const amplifyMainBranch = new amplify.CfnBranch(this, 'AmplifyMainBranch', {
+  appId: amplifyApp.attrAppId,
+  branchName: 'main',
+  enableAutoBuild: true,
+  stage: 'PRODUCTION',
+  environmentVariables: [
+    { name: 'AMPLIFY_MONOREPO_APP_ROOT', value: 'frontend' },
+    { name: 'NEXT_PUBLIC_API_URL', value: api.url },
+    // ... other NEXT_PUBLIC_ vars
+  ],
+});
 
-new AwsCustomResource(this, "TriggerAmplifyBuild", {
+// ADR: AwsCustomResource to trigger Amplify build on every CDK deploy
+// Rationale: enableAutoBuild only fires on git pushes, not CDK deploys.
+//   Environment variable changes (API URLs, Cognito IDs) require a rebuild.
+// Alternative: Manual `aws amplify start-job` after deploy (rejected - error-prone)
+new AwsCustomResource(this, 'TriggerAmplifyBuild', {
   onCreate: {
-    service: "Amplify", action: "startJob",
-    parameters: { appId: amplifyApp.appId, branchName: "main", jobType: "RELEASE" },
-    physicalResourceId: PhysicalResourceId.of(`${amplifyApp.appId}-main-${Date.now()}`),
+    service: 'Amplify',
+    action: 'startJob',
+    parameters: {
+      appId: amplifyApp.attrAppId,
+      branchName: 'main',
+      jobType: 'RELEASE',
+    },
+    physicalResourceId: PhysicalResourceId.of(
+      `${amplifyApp.attrAppId}-main-${Date.now()}`,
+    ),
   },
-  onUpdate: { /* same as onCreate */ },
-  policy: AwsCustomResourcePolicy.fromSdkCalls({ resources: [/* ARNs */] }),
+  onUpdate: {
+    service: 'Amplify',
+    action: 'startJob',
+    parameters: {
+      appId: amplifyApp.attrAppId,
+      branchName: 'main',
+      jobType: 'RELEASE',
+    },
+    physicalResourceId: PhysicalResourceId.of(
+      `${amplifyApp.attrAppId}-main-${Date.now()}`,
+    ),
+  },
+  policy: AwsCustomResourcePolicy.fromSdkCalls({
+    resources: [
+      `arn:aws:amplify:${this.region}:${this.account}:apps/${amplifyApp.attrAppId}`,
+      `arn:aws:amplify:${this.region}:${this.account}:apps/${amplifyApp.attrAppId}/branches/main/jobs/*`,
+    ],
+  }),
 });
 ```
 

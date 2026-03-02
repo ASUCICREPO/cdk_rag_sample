@@ -15,6 +15,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as amplify from 'aws-cdk-lib/aws-amplify';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as cr from 'aws-cdk-lib/custom-resources';
 import * as os from 'os';
 import * as path from 'path';
 import { Bucket as VectorsBucket, Index as VectorIndex } from 'cdk-s3-vectors';
@@ -803,6 +804,47 @@ export class NavStack extends cdk.Stack {
         value: amplifyApp.attrAppId,
         description: 'Amplify App ID',
       });
+
+      // ---------------------------------------------------------------
+      // 13.2 Auto-trigger Amplify build on CDK deploy
+      // ADR: AwsCustomResource to trigger Amplify build on every CDK deploy
+      // Rationale: enableAutoBuild only fires on git pushes, not CDK deploys.
+      //   Environment variable changes (API URLs, Cognito IDs) require a rebuild
+      //   to be picked up by the Next.js frontend at build time.
+      // Alternative: Manual `aws amplify start-job` after deploy (rejected - error-prone)
+      // ---------------------------------------------------------------
+      new cr.AwsCustomResource(this, 'TriggerAmplifyBuild', {
+        onCreate: {
+          service: 'Amplify',
+          action: 'startJob',
+          parameters: {
+            appId: amplifyApp.attrAppId,
+            branchName: 'main',
+            jobType: 'RELEASE',
+          },
+          physicalResourceId: cr.PhysicalResourceId.of(
+            `${amplifyApp.attrAppId}-main-${Date.now()}`,
+          ),
+        },
+        onUpdate: {
+          service: 'Amplify',
+          action: 'startJob',
+          parameters: {
+            appId: amplifyApp.attrAppId,
+            branchName: 'main',
+            jobType: 'RELEASE',
+          },
+          physicalResourceId: cr.PhysicalResourceId.of(
+            `${amplifyApp.attrAppId}-main-${Date.now()}`,
+          ),
+        },
+        policy: cr.AwsCustomResourcePolicy.fromSdkCalls({
+          resources: [
+            `arn:aws:amplify:${this.region}:${this.account}:apps/${amplifyApp.attrAppId}`,
+            `arn:aws:amplify:${this.region}:${this.account}:apps/${amplifyApp.attrAppId}/branches/main/jobs/*`,
+          ],
+        }),
+      });
     }
 
     // ---------------------------------------------------------------
@@ -1049,6 +1091,41 @@ export class NavStack extends cdk.Stack {
         {
           id: 'AwsSolutions-IAM5',
           reason: 'ADR: CDK BucketDeployment internal construct | Rationale: BucketDeployment generates wildcard S3 actions (s3:GetObject*, s3:List*) scoped to the source asset bucket and destination documents bucket. These are standard CDK-generated permissions for asset deployment. | Alternative: None — this is a CDK-managed internal resource.',
+        },
+      ],
+    );
+
+    // TriggerAmplifyBuild AwsCustomResource — internal Lambda + IAM for amplify:StartJob
+    NagSuppressions.addResourceSuppressionsByPath(
+      this,
+      `/${stackName}/TriggerAmplifyBuild/CustomResourcePolicy/Resource`,
+      [
+        {
+          id: 'AwsSolutions-IAM5',
+          reason: 'ADR: AwsCustomResource auto-build trigger | Rationale: fromSdkCalls() generates a policy scoped to the Amplify app and branch job ARNs with a wildcard on job IDs (required — job IDs are generated at runtime). | Alternative: None — job IDs are not known at deploy time.',
+        },
+      ],
+    );
+
+    NagSuppressions.addResourceSuppressionsByPath(
+      this,
+      `/${stackName}/AWS679f53fac002430cb0da5b7982bd2287/Resource`,
+      [
+        {
+          id: 'AwsSolutions-L1',
+          reason: 'ADR: AwsCustomResource internal Lambda | Rationale: Lambda runtime is managed by the CDK custom-resources module. Cannot control runtime version. | Alternative: Custom Lambda (rejected - AwsCustomResource is the CDK-recommended pattern for SDK calls).',
+        },
+      ],
+    );
+
+    NagSuppressions.addResourceSuppressionsByPath(
+      this,
+      `/${stackName}/AWS679f53fac002430cb0da5b7982bd2287/ServiceRole/Resource`,
+      [
+        {
+          id: 'AwsSolutions-IAM4',
+          reason: 'ADR: AwsCustomResource internal Lambda | Rationale: CDK creates an internal Lambda for SDK calls that uses AWSLambdaBasicExecutionRole for CloudWatch Logs access. This is the standard CDK pattern. | Alternative: None — this is a CDK-managed internal resource.',
+          appliesTo: ['Policy::arn:<AWS::Partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'],
         },
       ],
     );
