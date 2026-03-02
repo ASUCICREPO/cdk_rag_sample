@@ -9,6 +9,7 @@ import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import ChatInterface from '@/components/ChatInterface';
 import LanguageSelector from '@/components/LanguageSelector';
+import RoleSelector from '@/components/RoleSelector';
 import LeadCaptureForm from '@/components/LeadCaptureForm';
 
 type UserRole = 'instructor' | 'internal_staff' | 'learner';
@@ -188,7 +189,7 @@ export default function AppShell() {
         <button
           type="button"
           onClick={() => setShowLeadCapture(true)}
-          className="mt-6 text-sm text-blue-600 hover:text-blue-700 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+          className="mt-6 text-sm text-blue-600 hover:text-blue-700 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
         >
           Not a member? Get in touch
         </button>
@@ -209,6 +210,10 @@ export default function AppShell() {
           Learning Navigator
         </h1>
         <div className="flex items-center gap-3">
+          <RoleSelector
+            currentRole={authState.userRole}
+            onRoleChange={refreshAuth}
+          />
           <LanguageSelector />
           <span className="text-sm text-gray-500 hidden sm:inline">
             {authState.username}
@@ -241,6 +246,7 @@ export default function AppShell() {
         <ChatInterface
           userRole={authState.userRole}
           token={authState.token}
+          username={authState.username}
         />
       </main>
     </div>

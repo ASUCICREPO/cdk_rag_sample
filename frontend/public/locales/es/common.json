@@ -45,6 +45,15 @@
   },
   "escalation": {
     "title": "Conectar con soporte",
+    "subtitle": "¿Le gustaría conectarse con un miembro del equipo de soporte? Proporcione su correo electrónico y nos pondremos en contacto.",
+    "emailLabel": "Correo electrónico",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "successTitle": "Solicitud enviada",
+    "successMessage": "Su solicitud ha sido enviada. Un miembro del equipo de soporte se pondrá en contacto.",
+    "close": "Cerrar"
+  },
+    "title": "Conectar con soporte",
     "subtitle": "¿Te gustaría conectar con un miembro del equipo de soporte? Proporciona tu correo electrónico y te contactaremos.",
     "emailLabel": "Correo electrónico",
     "confirm": "Confirmar",

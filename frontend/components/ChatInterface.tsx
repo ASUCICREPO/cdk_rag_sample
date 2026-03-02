@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { useStreamingChat } from '@/hooks/useStreamingChat';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MessageBubble from '@/components/MessageBubble';
+import EscalationPrompt from '@/components/EscalationPrompt';
 import { getApiEndpoint } from '@/lib/config';
 
 /** Role-based suggested prompts shown on the welcome screen. */
@@ -29,9 +30,10 @@ const SUGGESTED_PROMPTS: Record<string, string[]> = {
 interface ChatInterfaceProps {
   userRole: 'instructor' | 'internal_staff' | 'learner';
   token: string;
+  username: string;
 }
 
-export default function ChatInterface({ userRole, token }: ChatInterfaceProps) {
+export default function ChatInterface({ userRole, token, username }: ChatInterfaceProps) {
   const { messages, isLoading, isStreaming, sendMessage, sessionId } =
     useStreamingChat();
   const { language } = useLanguage();
@@ -40,6 +42,7 @@ export default function ChatInterface({ userRole, token }: ChatInterfaceProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [announcement, setAnnouncement] = useState('');
   const [lastAnnouncedId, setLastAnnouncedId] = useState<string | null>(null);
+  const [showEscalation, setShowEscalation] = useState(false);
 
   const prompts = SUGGESTED_PROMPTS[userRole] ?? SUGGESTED_PROMPTS.learner;
 
@@ -104,6 +107,14 @@ export default function ChatInterface({ userRole, token }: ChatInterfaceProps) {
 
   const handlePromptClick = (prompt: string) => {
     sendMessage(prompt, language, token);
+  };
+
+  // Generate conversation summary for escalation
+  const generateConversationSummary = (): string => {
+    const recentMessages = messages.slice(-6); // Last 3 exchanges
+    return recentMessages
+      .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content.substring(0, 200)}`)
+      .join('\n');
   };
 
   const hasMessages = messages.length > 0;
@@ -176,36 +187,61 @@ export default function ChatInterface({ userRole, token }: ChatInterfaceProps) {
 
       {/* Input bar */}
       <div className="border-t border-gray-200 bg-white px-4 py-3">
-        <div className="flex items-end gap-2 max-w-3xl mx-auto">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message…"
-            aria-label="Message input"
-            rows={1}
-            className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] max-h-40 overflow-y-auto"
-          />
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={!input.trim() || isStreaming}
-            aria-label="Send message"
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="w-5 h-5"
-              aria-hidden="true"
+        <div className="flex flex-col gap-2 max-w-3xl mx-auto">
+          {/* Contact Support button - shown when there are messages */}
+          {hasMessages && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowEscalation(true)}
+                className="text-xs text-gray-500 hover:text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 transition-colors"
+                aria-label="Contact support"
+              >
+                Need help? Contact support
+              </button>
+            </div>
+          )}
+          
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message…"
+              aria-label="Message input"
+              rows={1}
+              className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[44px] max-h-40 overflow-y-auto"
+            />
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!input.trim() || isStreaming}
+              aria-label="Send message"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-            </svg>
-          </button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-5 h-5"
+                aria-hidden="true"
+              >
+                <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Escalation modal */}
+      <EscalationPrompt
+        isOpen={showEscalation}
+        onClose={() => setShowEscalation(false)}
+        sessionId={sessionId}
+        userRole={userRole}
+        conversationSummary={generateConversationSummary()}
+      />
     </div>
   );
 }
