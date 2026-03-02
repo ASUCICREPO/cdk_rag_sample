@@ -1,0 +1,151 @@
+{
+  "chat": {
+    "welcomeTitle": "Welcome to Learning Navigator",
+    "welcomeSubtitle": "Ask me anything about MHFA training, resources, and support.",
+    "inputPlaceholder": "Type your message…",
+    "send": "Send message",
+    "loading": "Generating response"
+  },
+  "prompts": {
+    "instructor": [
+      "How do I manage my upcoming MHFA courses?",
+      "What are the invoicing guidelines for instructors?",
+      "Where can I find the Instructor Policy Handbook?"
+    ],
+    "internal_staff": [
+      "Show me recent conversation analytics.",
+      "What are the current operational guidelines?",
+      "How do I access admin guidance for training support?"
+    ],
+    "learner": [
+      "What is Mental Health First Aid training?",
+      "How do I get my MHFA certification?",
+      "Where can I find additional MHFA resources?"
+    ]
+  },
+  "citations": {
+    "sources": "Sources"
+  },
+  "feedback": {
+    "thumbsUp": "Helpful",
+    "thumbsDown": "Not helpful",
+    "rateResponse": "Rate this response"
+  },
+  "leadCapture": {
+    "title": "Stay connected",
+    "subtitle": "Share your details so we can follow up with resources tailored to your interests.",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "areaLabel": "Area of interest",
+    "submit": "Submit",
+    "noThanks": "No thanks",
+    "successTitle": "Thank you!",
+    "successMessage": "We've received your information and will be in touch soon.",
+    "continue": "Continue chatting"
+  },
+  "escalation": {
+    "title": "Connect with support",
+    "subtitle": "Would you like to connect with a support team member? Provide your email and we'll follow up.",
+    "emailLabel": "Email",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "successTitle": "Request submitted",
+    "successMessage": "Your request has been submitted. A support team member will follow up.",
+    "close": "Close"
+  },
+  "language": {
+    "label": "Select language"
+  },
+  "errors": {
+    "timeout": "Request timed out. Please try again.",
+    "network": "Network error. Please check your connection and try again.",
+    "generic": "Something went wrong. Please try again."
+  },
+  "admin": {
+    "dashboardTitle": "Admin Dashboard",
+    "conversations": "Conversations",
+    "analytics": "Analytics",
+    "escalations": "Escalations",
+    "feedback": "Feedback",
+    "conversationLog": {
+      "startDate": "Start date",
+      "endDate": "End date",
+      "role": "Role",
+      "language": "Language",
+      "sentiment": "Sentiment",
+      "allRoles": "All roles",
+      "allLanguages": "All languages",
+      "allSentiments": "All sentiments",
+      "positive": "Positive",
+      "neutral": "Neutral",
+      "negative": "Negative",
+      "apply": "Apply filters",
+      "reset": "Reset",
+      "loading": "Loading conversations…",
+      "error": "Failed to load conversations. Please try again.",
+      "retry": "Retry",
+      "empty": "No conversations found.",
+      "session": "Session",
+      "messages": "messages",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "userMessage": "User",
+      "assistantMessage": "Assistant"
+    },
+    "analyticsPanel": {
+      "title": "Usage Analytics",
+      "periodLabel": "Time period",
+      "period": {
+        "7d": "7 days",
+        "30d": "30 days",
+        "90d": "90 days"
+      },
+      "loading": "Loading analytics…",
+      "retry": "Retry",
+      "selectPeriod": "Select a time period to load analytics.",
+      "usageMetrics": "Usage metrics",
+      "totalConversations": "Total conversations",
+      "activeSessions": "Active sessions",
+      "avgDuration": "Avg. session duration",
+      "sentimentTrend": "Sentiment trend",
+      "noSentimentData": "No sentiment data available for this period.",
+      "sentimentChartLabel": "Sentiment trend bar chart"
+    },
+    "feedbackAnalytics": {
+      "title": "Feedback Analytics",
+      "periodLabel": "Time period",
+      "period": {
+        "7d": "7 days",
+        "30d": "30 days",
+        "90d": "90 days"
+      },
+      "loading": "Loading feedback data…",
+      "retry": "Retry",
+      "selectPeriod": "Select a time period to load feedback analytics.",
+      "positiveCount": "Positive",
+      "negativeCount": "Negative",
+      "totalCount": "Total",
+      "positiveRatio": "Positive ratio",
+      "ratioBar": "Positive vs. negative",
+      "ratioBarLabel": "{{positive}}% positive, {{negative}}% negative",
+      "positiveLabel": "Positive",
+      "negativeLabel": "Negative",
+      "dailyTrend": "Daily trend",
+      "trendChartLabel": "Daily feedback trend chart"
+    },
+    "escalationQueue": {
+      "statusLabel": "Status",
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "load": "Load escalations",
+      "loading": "Loading escalations…",
+      "error": "Failed to load escalations. Please try again.",
+      "resolveError": "Failed to resolve escalation. Please try again.",
+      "retry": "Retry",
+      "empty": "No escalations found.",
+      "resolve": "Resolve",
+      "resolving": "Resolving…",
+      "resolvedAt": "Resolved"
+    }
+  }
+}

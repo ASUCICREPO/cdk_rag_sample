@@ -1,0 +1,151 @@
+{
+  "chat": {
+    "welcomeTitle": "Bienvenido a Learning Navigator",
+    "welcomeSubtitle": "Pregúntame sobre capacitación, recursos y apoyo de MHFA.",
+    "inputPlaceholder": "Escribe tu mensaje…",
+    "send": "Enviar mensaje",
+    "loading": "Generando respuesta"
+  },
+  "prompts": {
+    "instructor": [
+      "¿Cómo administro mis próximos cursos de MHFA?",
+      "¿Cuáles son las pautas de facturación para instructores?",
+      "¿Dónde puedo encontrar el Manual de Políticas del Instructor?"
+    ],
+    "internal_staff": [
+      "Muéstrame los análisis de conversaciones recientes.",
+      "¿Cuáles son las pautas operativas actuales?",
+      "¿Cómo accedo a la guía administrativa para soporte de capacitación?"
+    ],
+    "learner": [
+      "¿Qué es la capacitación en Primeros Auxilios de Salud Mental?",
+      "¿Cómo obtengo mi certificación MHFA?",
+      "¿Dónde puedo encontrar recursos adicionales de MHFA?"
+    ]
+  },
+  "citations": {
+    "sources": "Fuentes"
+  },
+  "feedback": {
+    "thumbsUp": "Útil",
+    "thumbsDown": "No útil",
+    "rateResponse": "Califica esta respuesta"
+  },
+  "leadCapture": {
+    "title": "Mantente conectado",
+    "subtitle": "Comparte tus datos para que podamos enviarte recursos adaptados a tus intereses.",
+    "nameLabel": "Nombre",
+    "emailLabel": "Correo electrónico",
+    "areaLabel": "Área de interés",
+    "submit": "Enviar",
+    "noThanks": "No, gracias",
+    "successTitle": "¡Gracias!",
+    "successMessage": "Hemos recibido tu información y nos pondremos en contacto pronto.",
+    "continue": "Continuar chateando"
+  },
+  "escalation": {
+    "title": "Conectar con soporte",
+    "subtitle": "¿Te gustaría conectar con un miembro del equipo de soporte? Proporciona tu correo electrónico y te contactaremos.",
+    "emailLabel": "Correo electrónico",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "successTitle": "Solicitud enviada",
+    "successMessage": "Tu solicitud ha sido enviada. Un miembro del equipo de soporte se comunicará contigo.",
+    "close": "Cerrar"
+  },
+  "language": {
+    "label": "Seleccionar idioma"
+  },
+  "errors": {
+    "timeout": "La solicitud ha expirado. Por favor, inténtalo de nuevo.",
+    "network": "Error de red. Por favor, verifica tu conexión e inténtalo de nuevo.",
+    "generic": "Algo salió mal. Por favor, inténtalo de nuevo."
+  },
+  "admin": {
+    "dashboardTitle": "Panel de Administración",
+    "conversations": "Conversaciones",
+    "analytics": "Análisis",
+    "escalations": "Escalaciones",
+    "feedback": "Comentarios",
+    "conversationLog": {
+      "startDate": "Fecha de inicio",
+      "endDate": "Fecha de fin",
+      "role": "Rol",
+      "language": "Idioma",
+      "sentiment": "Sentimiento",
+      "allRoles": "Todos los roles",
+      "allLanguages": "Todos los idiomas",
+      "allSentiments": "Todos los sentimientos",
+      "positive": "Positivo",
+      "neutral": "Neutral",
+      "negative": "Negativo",
+      "apply": "Aplicar filtros",
+      "reset": "Restablecer",
+      "loading": "Cargando conversaciones…",
+      "error": "Error al cargar conversaciones. Inténtalo de nuevo.",
+      "retry": "Reintentar",
+      "empty": "No se encontraron conversaciones.",
+      "session": "Sesión",
+      "messages": "mensajes",
+      "collapse": "Contraer",
+      "expand": "Expandir",
+      "userMessage": "Usuario",
+      "assistantMessage": "Asistente"
+    },
+    "analyticsPanel": {
+      "title": "Análisis de uso",
+      "periodLabel": "Período de tiempo",
+      "period": {
+        "7d": "7 días",
+        "30d": "30 días",
+        "90d": "90 días"
+      },
+      "loading": "Cargando análisis…",
+      "retry": "Reintentar",
+      "selectPeriod": "Selecciona un período de tiempo para cargar los análisis.",
+      "usageMetrics": "Métricas de uso",
+      "totalConversations": "Total de conversaciones",
+      "activeSessions": "Sesiones activas",
+      "avgDuration": "Duración promedio de sesión",
+      "sentimentTrend": "Tendencia de sentimiento",
+      "noSentimentData": "No hay datos de sentimiento disponibles para este período.",
+      "sentimentChartLabel": "Gráfico de barras de tendencia de sentimiento"
+    },
+    "feedbackAnalytics": {
+      "title": "Análisis de comentarios",
+      "periodLabel": "Período de tiempo",
+      "period": {
+        "7d": "7 días",
+        "30d": "30 días",
+        "90d": "90 días"
+      },
+      "loading": "Cargando datos de comentarios…",
+      "retry": "Reintentar",
+      "selectPeriod": "Selecciona un período de tiempo para cargar el análisis de comentarios.",
+      "positiveCount": "Positivos",
+      "negativeCount": "Negativos",
+      "totalCount": "Total",
+      "positiveRatio": "Proporción positiva",
+      "ratioBar": "Positivos vs. negativos",
+      "ratioBarLabel": "{{positive}}% positivos, {{negative}}% negativos",
+      "positiveLabel": "Positivos",
+      "negativeLabel": "Negativos",
+      "dailyTrend": "Tendencia diaria",
+      "trendChartLabel": "Gráfico de tendencia diaria de comentarios"
+    },
+    "escalationQueue": {
+      "statusLabel": "Estado",
+      "pending": "Pendiente",
+      "resolved": "Resuelto",
+      "load": "Cargar escalaciones",
+      "loading": "Cargando escalaciones…",
+      "error": "Error al cargar escalaciones. Inténtalo de nuevo.",
+      "resolveError": "Error al resolver escalación. Inténtalo de nuevo.",
+      "retry": "Reintentar",
+      "empty": "No se encontraron escalaciones.",
+      "resolve": "Resolver",
+      "resolving": "Resolviendo…",
+      "resolvedAt": "Resuelto"
+    }
+  }
+}
