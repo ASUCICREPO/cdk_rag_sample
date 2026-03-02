@@ -241,6 +241,7 @@ export default function ChatInterface({ userRole, token, username }: ChatInterfa
         sessionId={sessionId}
         userRole={userRole}
         conversationSummary={generateConversationSummary()}
+        token={token}
       />
     </div>
   );

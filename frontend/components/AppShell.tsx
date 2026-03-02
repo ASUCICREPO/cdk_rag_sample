@@ -210,10 +210,6 @@ export default function AppShell() {
           Learning Navigator
         </h1>
         <div className="flex items-center gap-3">
-          <RoleSelector
-            currentRole={authState.userRole}
-            onRoleChange={refreshAuth}
-          />
           <LanguageSelector />
           <span className="text-sm text-gray-500 hidden sm:inline">
             {authState.username}

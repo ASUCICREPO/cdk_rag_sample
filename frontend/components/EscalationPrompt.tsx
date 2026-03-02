@@ -10,6 +10,7 @@ interface EscalationPromptProps {
   sessionId: string;
   userRole: string;
   conversationSummary: string;
+  token: string;
 }
 
 /** Simple email validation: non-empty local part, @, non-empty domain with dot. */
@@ -29,6 +30,7 @@ export default function EscalationPrompt({
   sessionId,
   userRole,
   conversationSummary,
+  token,
 }: EscalationPromptProps) {
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,7 +115,10 @@ export default function EscalationPrompt({
 
       const response = await fetch(getApiEndpoint('/escalations'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           session_id: sessionId,
           summary: conversationSummary,
