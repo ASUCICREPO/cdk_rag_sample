@@ -96,8 +96,10 @@ export default function ConversationLog({ token }: ConversationLogProps) {
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
-      const data: ConversationSession[] = await res.json();
-      setSessions(data);
+      const data = await res.json();
+      // Backend returns {"conversations": [...], "count": N}
+      const conversations: ConversationSession[] = Array.isArray(data) ? data : (data.conversations ?? []);
+      setSessions(conversations);
       setExpandedSession(null);
       setSessionDetail(null);
     } catch (err) {

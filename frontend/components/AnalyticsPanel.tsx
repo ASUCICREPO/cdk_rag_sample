@@ -84,8 +84,21 @@ export default function AnalyticsPanel({ token }: AnalyticsPanelProps) {
           ),
         ]);
 
-        const metricsData: UsageMetrics = await metricsRes.json();
-        const sentimentData: SentimentBucket[] = await sentimentRes.json();
+        const metricsJson = await metricsRes.json();
+        // Backend returns {total_conversations, active_sessions, average_session_duration_seconds, ...}
+        const metricsData: UsageMetrics = {
+          total_conversations: metricsJson.total_conversations ?? 0,
+          active_sessions: metricsJson.active_sessions ?? 0,
+          average_session_duration: metricsJson.average_session_duration_seconds ?? metricsJson.average_session_duration ?? 0,
+        };
+
+        const sentimentJson = await sentimentRes.json();
+        // Backend returns {"period": "7d", "trend": [{date, average_sentiment, message_count}, ...]}
+        const rawTrend = Array.isArray(sentimentJson) ? sentimentJson : (sentimentJson.trend ?? []);
+        const sentimentData: SentimentBucket[] = rawTrend.map((b: Record<string, unknown>) => ({
+          time_bucket: (b.date as string) ?? (b.time_bucket as string) ?? '',
+          average_sentiment: (b.average_sentiment as number) ?? 0,
+        }));
 
         setMetrics(metricsData);
         setSentiment(sentimentData);
