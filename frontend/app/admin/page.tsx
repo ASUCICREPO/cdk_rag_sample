@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { configureAmplify } from '@/lib/amplify-config';
 import '@/lib/i18n';
 import { getCurrentUser, fetchAuthSession, signOut } from 'aws-amplify/auth';
+import Link from 'next/link';
 import ConversationLog from '@/components/ConversationLog';
 import AnalyticsPanel from '@/components/AnalyticsPanel';
 import EscalationQueue from '@/components/EscalationQueue';
@@ -129,12 +130,12 @@ export default function AdminDashboardPage() {
           <p className="mt-2 text-sm text-gray-500">
             Please sign in to access the admin dashboard.
           </p>
-          <a
+          <Link
             href="/"
             className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
             Go to sign in
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -165,12 +166,12 @@ export default function AdminDashboardPage() {
           <p className="mt-2 text-sm text-gray-500">
             The admin dashboard is restricted to internal staff members.
           </p>
-          <a
+          <Link
             href="/"
             className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
             Back to chat
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -182,7 +183,7 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
-          <a
+          <Link
             href="/"
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             aria-label="Back to chat"
@@ -197,7 +198,7 @@ export default function AdminDashboardPage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
             </svg>
-          </a>
+          </Link>
           <h1 className="text-lg font-semibold text-gray-800">
             {t('admin.dashboardTitle')}
           </h1>

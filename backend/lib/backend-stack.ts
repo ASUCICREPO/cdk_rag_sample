@@ -369,6 +369,10 @@ export class NavStack extends cdk.Stack {
       );
 
       // Amplify App with GitHub source code provider
+      // ADR: Minimal buildSpec with monorepo appRoot for Next.js auto-detection
+      // Rationale: Amplify auto-detects Next.js and generates deploy-manifest.json
+      //   when the appRoot points to the frontend/ subdirectory. No custom artifacts needed.
+      // Alternative: Custom buildSpec with .amplify-hosting baseDirectory (rejected - fragile)
       amplifyApp = new amplify.CfnApp(this, 'AmplifyApp', {
         name: `${projectPrefix}-frontend`,
         description: 'Learning Navigator Next.js frontend hosted on AWS Amplify',
@@ -377,22 +381,24 @@ export class NavStack extends cdk.Stack {
         platform: 'WEB_COMPUTE',
         buildSpec: [
           'version: 1',
-          'frontend:',
-          '  phases:',
-          '    preBuild:',
-          '      commands:',
-          '        - cd frontend',
-          '        - npm ci',
-          '    build:',
-          '      commands:',
-          '        - npm run build',
-          '  artifacts:',
-          '    baseDirectory: frontend/.next',
-          '    files:',
-          '      - "**/*"',
-          '  cache:',
-          '    paths:',
-          '      - frontend/node_modules/**/*',
+          'applications:',
+          '  - appRoot: frontend',
+          '    frontend:',
+          '      phases:',
+          '        preBuild:',
+          '          commands:',
+          '            - npm ci',
+          '        build:',
+          '          commands:',
+          '            - npm run build',
+          '      artifacts:',
+          '        baseDirectory: .next',
+          '        files:',
+          '          - "**/*"',
+          '      cache:',
+          '        paths:',
+          '          - node_modules/**/*',
+          '          - .next/cache/**/*',
         ].join('\n'),
         customRules: [
           {
@@ -766,6 +772,7 @@ export class NavStack extends cdk.Stack {
     if (isAmplifyEnabled && amplifyApp && amplifyMainBranch && amplifyAppUrl) {
       // Set environment variables on the branch now that API/Function URLs exist
       amplifyMainBranch.environmentVariables = [
+        { name: 'AMPLIFY_MONOREPO_APP_ROOT', value: 'frontend' },
         { name: 'NEXT_PUBLIC_API_URL', value: this.api.url },
         { name: 'NEXT_PUBLIC_CHAT_FUNCTION_URL', value: this.chatHandlerUrl.url },
         { name: 'NEXT_PUBLIC_COGNITO_USER_POOL_ID', value: this.userPool.userPoolId },
@@ -774,7 +781,13 @@ export class NavStack extends cdk.Stack {
       ];
 
       // Also set app-level environment variables as defaults
+      // ADR: AMPLIFY_MONOREPO_APP_ROOT required for CloudFormation-deployed monorepo apps
+      // Rationale: Per AWS docs, when deploying a monorepo app via CloudFormation/CDK,
+      //   AMPLIFY_MONOREPO_APP_ROOT must be set manually to match the appRoot in buildSpec.
+      //   Without it, Amplify's Next.js framework adapter doesn't generate deploy-manifest.json.
+      // Alternative: Remove monorepo buildSpec (rejected - app lives in frontend/ subdirectory)
       amplifyApp.environmentVariables = [
+        { name: 'AMPLIFY_MONOREPO_APP_ROOT', value: 'frontend' },
         { name: 'NEXT_PUBLIC_API_URL', value: this.api.url },
         { name: 'NEXT_PUBLIC_CHAT_FUNCTION_URL', value: this.chatHandlerUrl.url },
         { name: 'NEXT_PUBLIC_COGNITO_USER_POOL_ID', value: this.userPool.userPoolId },
