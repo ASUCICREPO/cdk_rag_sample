@@ -34,7 +34,7 @@ USER_POOL_ID = os.environ.get("USER_POOL_ID", "")
 REGION = os.environ.get("REGION", os.environ.get("AWS_REGION", "us-east-1"))
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "http://localhost:3000")
 NUM_KB_RESULTS = int(os.environ.get("NUM_KB_RESULTS", "5"))
-MODEL_ID = os.environ.get("MODEL_ID", "amazon.nova-pro-v1:0")
+MODEL_ID = os.environ.get("MODEL_ID", "us.amazon.nova-pro-v1:0")
 
 # JWKS cache (populated on first request per cold start)
 _jwks_cache: dict = {}
@@ -332,13 +332,15 @@ def stream_sse_response(
     progressively. We build the full SSE payload and return it as the
     response body — the Function URL runtime handles chunked transfer.
     """
-    model_arn = f"arn:aws:bedrock:{REGION}::foundation-model/{MODEL_ID}"
+    # ADR: Use inference profile ID instead of foundation model ARN
+    # Rationale: Bedrock requires inference profiles for on-demand Nova Pro invocations
+    # Alternative: Foundation model ARN (rejected — returns ValidationException)
     message_id = str(uuid.uuid4())
     full_response = []
 
     try:
         response = bedrock_runtime.converse_stream(
-            modelId=model_arn,
+            modelId=MODEL_ID,
             messages=[{"role": "user", "content": [{"text": query}]}],
             system=[{"text": system_prompt}],
         )

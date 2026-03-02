@@ -436,7 +436,11 @@ export class NavStack extends cdk.Stack {
       ? lambda.Architecture.ARM_64
       : lambda.Architecture.X86_64;
 
-    const novaProModelArn = `arn:aws:bedrock:${this.region}::foundation-model/amazon.nova-pro-v1:0`;
+    // ADR: Inference profile ARN for Nova Pro on-demand invocation
+    // Rationale: Bedrock requires inference profiles for on-demand Nova Pro.
+    //   Direct foundation model ARN invocation returns ValidationException.
+    // Alternative: Foundation model ARN (rejected — no longer supported for on-demand)
+    const novaProInferenceProfileArn = `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.amazon.nova-pro-v1:0`;
 
     this.chatHandlerFn = new lambda.Function(this, 'ChatHandlerFunction', {
       functionName: `${projectPrefix}-chat-handler`,
@@ -472,11 +476,11 @@ export class NavStack extends cdk.Stack {
       ],
     }));
 
-    // Bedrock ConverseStream — scoped to Nova Pro model ARN
+    // Bedrock ConverseStream — scoped to Nova Pro inference profile ARN
     this.chatHandlerFn.addToRolePolicy(new iam.PolicyStatement({
       sid: 'BedrockInvokeModel',
       actions: ['bedrock:InvokeModelWithResponseStream'],
-      resources: [novaProModelArn],
+      resources: [novaProInferenceProfileArn],
     }));
 
     // Function URL with streaming invoke mode and CORS
