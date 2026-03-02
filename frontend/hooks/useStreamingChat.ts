@@ -164,12 +164,32 @@ export function useStreamingChat() {
           const { done, value } = await reader.read();
           if (done) break;
 
-          // Lambda Function URL may wrap SSE chunks in JSON strings
+          // ADR: Handle Lambda Function URL RESPONSE_STREAM JSON envelope
+          // Rationale: When a Lambda returns a standard dict response with RESPONSE_STREAM
+          //   invoke mode, the Function URL wraps it as {"statusCode":200,"headers":{...},"body":"..."}
+          //   We need to extract the SSE content from the body field.
+          // Alternative: Switch to BUFFERED mode (rejected — want streaming capability for future)
           let chunk = decoder.decode(value, { stream: true });
           try {
-            const unwrapped = JSON.parse(chunk);
-            if (typeof unwrapped === 'string') chunk = unwrapped;
-          } catch {
+            const parsed = JSON.parse(chunk);
+            if (typeof parsed === 'string') {
+              chunk = parsed;
+            } else if (parsed && typeof parsed === 'object' && typeof parsed.body === 'string') {
+              // Lambda response envelope — extract SSE body
+              if (parsed.statusCode && parsed.statusCode >= 400) {
+                try {
+                  const errBody = JSON.parse(parsed.body);
+                  throw new Error(errBody.message || errBody.error || `Error: ${parsed.statusCode}`);
+                } catch (e) {
+                  if (e instanceof Error && e.message !== parsed.body) throw e;
+                  throw new Error(parsed.body || `Error: ${parsed.statusCode}`);
+                }
+              }
+              chunk = parsed.body;
+            }
+          } catch (e) {
+            // Re-throw if it's an error we created above
+            if (e instanceof Error && !e.message.includes('JSON')) throw e;
             // Not JSON-wrapped, use raw chunk
           }
 
