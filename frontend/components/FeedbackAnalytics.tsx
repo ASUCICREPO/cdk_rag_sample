@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getApiEndpoint } from '@/lib/config';
 
@@ -36,6 +36,11 @@ export default function FeedbackAnalytics({ token }: FeedbackAnalyticsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
+
+  // Auto-fetch on mount
+  useEffect(() => {
+    fetchFeedback(period);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchFeedback = useCallback(
     async (selectedPeriod: Period) => {

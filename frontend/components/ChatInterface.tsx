@@ -2,9 +2,10 @@
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import ReactMarkdown from 'react-markdown';
-import { useStreamingChat, Message, Citation } from '@/hooks/useStreamingChat';
+import { useStreamingChat } from '@/hooks/useStreamingChat';
 import { useLanguage } from '@/contexts/LanguageContext';
+import MessageBubble from '@/components/MessageBubble';
+import { getApiEndpoint } from '@/lib/config';
 
 /** Role-based suggested prompts shown on the welcome screen. */
 const SUGGESTED_PROMPTS: Record<string, string[]> = {
@@ -31,7 +32,7 @@ interface ChatInterfaceProps {
 }
 
 export default function ChatInterface({ userRole, token }: ChatInterfaceProps) {
-  const { messages, isLoading, isStreaming, sendMessage } =
+  const { messages, isLoading, isStreaming, sendMessage, sessionId } =
     useStreamingChat();
   const { language } = useLanguage();
   const [input, setInput] = useState('');
@@ -41,6 +42,26 @@ export default function ChatInterface({ userRole, token }: ChatInterfaceProps) {
   const [lastAnnouncedId, setLastAnnouncedId] = useState<string | null>(null);
 
   const prompts = SUGGESTED_PROMPTS[userRole] ?? SUGGESTED_PROMPTS.learner;
+
+  // Handle feedback submission
+  const handleFeedback = async (messageId: string, rating: 'positive' | 'negative') => {
+    try {
+      await fetch(getApiEndpoint('/feedback'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message_id: messageId,
+          session_id: sessionId,
+          rating,
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+    }
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -132,7 +153,7 @@ export default function ChatInterface({ userRole, token }: ChatInterfaceProps) {
           /* Message list */
           <>
             {messages.map((msg) => (
-              <MessageRow key={msg.id} message={msg} />
+              <MessageBubble key={msg.id} message={msg} onFeedback={handleFeedback} />
             ))}
 
             {/* Loading indicator */}
@@ -186,87 +207,5 @@ export default function ChatInterface({ userRole, token }: ChatInterfaceProps) {
         </div>
       </div>
     </div>
-  );
-}
-
-/** Renders a single message row with role-based alignment and styling. */
-function MessageRow({ message }: { message: Message }) {
-  const isUser = message.role === 'user';
-
-  return (
-    <div
-      className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}
-      role="article"
-      aria-label={`${isUser ? 'Your' : 'Assistant'} message`}
-    >
-      <div
-        className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 ${
-          isUser
-            ? 'bg-blue-600 text-white rounded-tr-sm'
-            : 'bg-gray-100 text-gray-800 rounded-tl-sm'
-        }`}
-      >
-        {isUser ? (
-          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-        ) : (
-          <div className="prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5">
-            <ReactMarkdown>{message.content}</ReactMarkdown>
-          </div>
-        )}
-
-        {/* Citations as clickable source cards */}
-        {!isUser && message.citations && message.citations.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <p className="text-xs font-medium text-gray-500 mb-2">Sources</p>
-            <div className="grid gap-2">
-              {message.citations.map((citation, idx) => (
-                <CitationCard key={idx} citation={citation} index={idx} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Streaming cursor */}
-        {!isUser && message.isStreaming && (
-          <span className="inline-block w-1.5 h-4 bg-gray-400 animate-pulse ml-0.5 align-text-bottom" aria-hidden="true" />
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** Renders a clickable citation card that links to the S3 source document. */
-function CitationCard({ citation, index }: { citation: Citation; index: number }) {
-  // Clean up the document name for display (remove URL encoding, file extensions)
-  const displayName = decodeURIComponent(citation.document)
-    .replace(/\.pdf$/i, '')
-    .replace(/_/g, ' ');
-
-  return (
-    <a
-      href={citation.section}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`Source ${index + 1}: ${displayName}`}
-      className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-200 bg-white hover:bg-blue-50 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors group"
-    >
-      {/* Document icon */}
-      <div className="flex items-center justify-center w-8 h-8 rounded-md bg-blue-100 text-blue-600 shrink-0 group-hover:bg-blue-200 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
-          <path d="M3 3.5A1.5 1.5 0 0 1 4.5 2h6.879a1.5 1.5 0 0 1 1.06.44l4.122 4.12A1.5 1.5 0 0 1 17 7.622V16.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 16.5v-13Z" />
-        </svg>
-      </div>
-      {/* Document name and badge */}
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-gray-800 truncate group-hover:text-blue-700 transition-colors">
-          {displayName}
-        </p>
-        <p className="text-[10px] text-gray-400">PDF Document</p>
-      </div>
-      {/* External link indicator */}
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-500 shrink-0 transition-colors" aria-hidden="true">
-        <path fillRule="evenodd" d="M4.22 11.78a.75.75 0 0 1 0-1.06L9.44 5.5H5.75a.75.75 0 0 1 0-1.5h5.5a.75.75 0 0 1 .75.75v5.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 0 1-1.06 0Z" clipRule="evenodd" />
-      </svg>
-    </a>
   );
 }

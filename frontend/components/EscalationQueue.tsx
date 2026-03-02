@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getApiEndpoint } from '@/lib/config';
 
@@ -31,6 +31,11 @@ export default function EscalationQueue({ token }: EscalationQueueProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+
+  // Auto-fetch on mount
+  useEffect(() => {
+    fetchEscalations();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchEscalations = useCallback(async (status?: StatusFilter) => {
     const filterStatus = status ?? statusFilter;
